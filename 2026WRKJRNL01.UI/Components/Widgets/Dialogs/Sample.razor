@@ -1,0 +1,32 @@
+﻿@page "/samples/dialogs"
+@inject ISnackbar Snackbar
+
+<h3>Dialogs Sample</h3>
+
+<MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="() => DiaglogIsVisible = true">
+    Show Dialog
+</MudButton>
+
+<Dialog_2026WRKJRNL01 Title="Sample Dialog" Visible="@DiaglogIsVisible" OnConfirm="HandleConfirm" OnClose="HandleClose">
+        <p>This is a sample dialog content. You can place any markup here.</p>
+</Dialog_2026WRKJRNL01>
+
+@code {
+    private bool DiaglogIsVisible;
+
+    private void HandleConfirm()
+    {
+        // Handle confirm action
+        DiaglogIsVisible = false;
+        Snackbar.Add("Confirm button clicked!", Severity.Success);
+    }
+
+    //optional if you need logic on close button
+    private void HandleClose()
+    {
+        // Handle close action
+        DiaglogIsVisible = false;
+        Snackbar.Add("Cancel button clicked!", Severity.Error);
+    }
+
+}

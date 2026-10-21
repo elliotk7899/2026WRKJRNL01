@@ -1,0 +1,11 @@
+@* LOCAL AUTH SHIM
+   Replaces SDPBC.Authentication.BlazorUI.Mud.Components.Admin.UserManagementComponent
+   (from the private NuGet package) with a local placeholder. Real user management is a
+   network/SAML feature that is unavailable off-network. Declared in the original
+   namespace so Users.razor compiles unchanged. *@
+@namespace SDPBC.Authentication.BlazorUI.Mud.Components.Admin
+
+<MudAlert Severity="Severity.Info" Class="ma-2">
+    User management is unavailable in the local (offline) build.
+    This feature depends on the corporate identity provider.
+</MudAlert>

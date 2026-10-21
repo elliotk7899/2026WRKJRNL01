@@ -1,0 +1,1 @@
+﻿Repository classes go here.  FOr more details, please refer to the DataRepositorBase class provided in the SDPBC.Data.Common namespace.

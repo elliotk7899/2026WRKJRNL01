@@ -1,0 +1,192 @@
+﻿@page "/samples/containers"
+
+<h3>Sample Card & Drawer</h3>
+
+@{
+    Sample1 = @"
+<SDPBCard Title=""Simple Sample Card"" Class=""mt-4 mb-4"">
+        <ChildContent>
+            <MudText Typo=""Typo.body1"">
+                This is a sample to demonstrate the card component.
+            </MudText>
+        </ChildContent>
+    </SDPBCard>
+";}
+
+<Code Language="html" class="mt-2">
+    @Sample1
+</Code>
+
+<MudStack Row Class="mt-4">
+    <MudItem xs="6">
+        <h4>With Title:</h4>
+        <SDPBCard Title="Simple Sample Card" Class="mt-4 mb-4">
+            <ChildContent>
+                <MudText Typo="Typo.body1">
+                    This is a sample to demonstrate the card component.
+                </MudText>
+            </ChildContent>
+        </SDPBCard>
+    </MudItem>
+
+    <MudItem xs="6">
+        <h4>Without Title:</h4>
+        <SDPBCard Class="mt-4 mb-4">
+            <ChildContent>
+                <MudText Typo="Typo.body1">
+                    This is a sample to demonstrate the card component.
+                </MudText>
+            </ChildContent>
+        </SDPBCard>
+    </MudItem>
+</MudStack>
+
+
+<h4>With Gradient & SideBar:</h4>
+@{
+    Sample2 = @"
+<SDPBCard Title=""Fancy Sample Card"" Gradient=""true"" SideBar=""true"" Class=""mt-4 mb-4"">
+    <ChildContent>
+        <MudText Typo=""Typo.body1"">
+            This is a sample to demonstrate the card component.
+        </MudText>
+    </ChildContent>
+</SDPBCard>
+";
+}
+
+<Code Language="html" class="mt-2">
+    @Sample2
+</Code>
+
+<SDPBCard Title="Fancy Sample Card" Gradient="true" SideBar="true" Class="mt-4 mb-4">
+    <ChildContent>
+        <MudText Typo="Typo.body1">
+            This is a sample to demonstrate the card component.
+        </MudText>
+    </ChildContent>
+</SDPBCard>
+
+<h4>Inside a MudStack:</h4>
+@{
+    Sample3 = @"
+<MudStack Row>
+    <MudItem xs=""4"">
+        <SDPBCard Title=""Fancy Sample Card"" Gradient=""true"" SideBar=""true"" SideBarColor=""#ff0000"" Class=""mt-4 mb-4"">
+            <ChildContent>
+                <MudText Typo=""Typo.body1"">
+                    This is a sample to demonstrate the card component (responsive).
+                </MudText>
+            </ChildContent>
+        </SDPBCard>
+    </MudItem>
+
+    <MudItem xs=""4"">
+        <SDPBCard Title=""Fancy Sample Card"" Gradient=""true"" SideBar=""true"" SideBarColor=""#00ff00"" Class=""mt-4 mb-4"">
+            <ChildContent>
+                <MudText Typo=""Typo.body1"">
+                    This is a sample to demonstrate the card component (responsive).
+                </MudText>
+            </ChildContent>
+        </SDPBCard>
+    </MudItem>
+
+    <MudItem xs=""4"">
+        <SDPBCard Title=""Fancy Sample Card"" Gradient=""true"" SideBar=""true"" SideBarColor=""#0000ff"" Class=""mt-4 mb-4"">
+            <ChildContent>
+                <MudText Typo=""Typo.body1"">
+                    This is a sample to demonstrate the card component (responsive).
+                </MudText>
+            </ChildContent>
+        </SDPBCard>
+    </MudItem>
+</MudStack>
+";
+}
+
+<Code Language="html" class="mt-2">
+    @Sample3
+</Code>
+
+<MudStack Row>
+    <MudItem xs="4">
+        <SDPBCard Title="Fancy Sample Card" Gradient="true" SideBar="true" SideBarColor="#ff0000" Class="mt-4 mb-4">
+            <ChildContent>
+                <MudText Typo="Typo.body1">
+                    This is a sample to demonstrate the card component (responsive).
+                </MudText>
+            </ChildContent>
+        </SDPBCard>
+    </MudItem>
+
+    <MudItem xs="4">
+        <SDPBCard Title="Fancy Sample Card" Gradient="true" SideBar="true" SideBarColor="#00ff00" Class="mt-4 mb-4">
+            <ChildContent>
+                <MudText Typo="Typo.body1">
+                    This is a sample to demonstrate the card component (responsive).
+                </MudText>
+            </ChildContent>
+        </SDPBCard>
+    </MudItem>
+
+    <MudItem xs="4">
+        <SDPBCard Title="Fancy Sample Card" Gradient="true" SideBar="true" SideBarColor="#0000ff" Class="mt-4 mb-4">
+            <ChildContent>
+                <MudText Typo="Typo.body1">
+                    This is a sample to demonstrate the card component (responsive).
+                </MudText>
+            </ChildContent>
+        </SDPBCard>
+    </MudItem>
+</MudStack>
+
+<MudDivider Class="mb-2" />
+
+<h4>Drawer Component:</h4>
+@{
+    Sample4 = @"
+<SDPBCDrawer Title=""Sample Drawer"" Open=""drawerOpen"" ToggleDrawer=""HandleToggleDrawer"">
+    <ChildContent>
+        <MudText Typo=""Typo.body1"">
+            This is a drawer component that can be used for testing purposes.
+        </MudText>
+    </ChildContent>
+
+    <ControlsContent>
+        <MudButton Variant=""Variant.Filled"" Color=""Color.Dark"" OnClick=""() => HandleToggleDrawer(false)"">Cancel</MudButton>
+    </ControlsContent>
+</SDPBCDrawer>
+";}
+
+<Code Language="html" class="mt-2">
+    @Sample4
+</Code>
+
+<MudStack Class="mt-4">
+    <MudButton OnClick="() => Toggle()" Variant="Variant.Filled" Color="Color.Primary">Toggle Drawer</MudButton>
+</MudStack>
+
+<SDPBCDrawer Title="Sample Drawer" Open="drawerOpen" ToggleDrawer="HandleToggleDrawer">
+    <ChildContent>
+        <MudText Typo="Typo.body1">
+            This is a drawer component that can be used for testing purposes.
+        </MudText>
+    </ChildContent>
+
+    <ControlsContent>
+        <MudButton Variant="Variant.Filled" Color="Color.Dark" OnClick="() => HandleToggleDrawer(false)">Cancel</MudButton>
+    </ControlsContent>
+</SDPBCDrawer>
+
+@code {
+    private string Sample1, Sample2, Sample3, Sample4;
+
+    private bool drawerOpen = false;
+
+    private bool Toggle() => drawerOpen = !drawerOpen;
+
+    private void HandleToggleDrawer(bool? value)
+    {
+        drawerOpen = value.HasValue ? value.Value : false;
+    }
+}

@@ -1,0 +1,48 @@
+﻿<MudStack id="district-header">
+    <MudStack Row Style="height:100%">
+       <MudStack style="width: 6rem">
+            <a href="https://www.palmbeachschools.org/"
+               target="_blank"
+               draggable="false"
+               title="Palm Beach County School District Website">
+                <img id="district-logo" draggable="false"
+                     src="@Program.LogoURL" />
+            </a>
+        </MudStack>
+        <MudStack Justify="Justify.Center" Style="height:100%">
+            <MudText class="text-overflow" Typo="Typo.h6" style="color: #fff">
+                @Program.AppName
+            </MudText>
+        </MudStack>
+    </MudStack>
+</MudStack>
+
+<style>
+    #sdpbc-app-name {
+        color: #fff;
+        font-size: 2vh;
+        text-shadow: 2px 2px #1a1e23;
+        float: right;
+        text-align: right;
+        padding-top: 2vh;
+    }
+
+    #district-logo {
+        position: absolute;
+        z-index: 1301;
+        margin-left: 0.75rem;
+        margin-top: 1rem;
+        width: 76px;
+        user-select: none;
+    }
+
+    #district-header {
+        background: linear-gradient(90deg, var(--mud-palette-primary) 0%, var(--mud-palette-secondary) 50%);
+        position: fixed;
+        z-index: 1301;
+        width: 100%;
+        top: 0;
+        left: 0;
+        height: 3.5rem;
+    }
+</style>

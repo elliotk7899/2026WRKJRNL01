@@ -1,0 +1,80 @@
+﻿@page "/samples/buttons"
+
+<h3>Buttons Sample</h3>
+
+<MudStack>
+    <MudItem>
+        <MudCard Class="pa-4">
+            <MudText>
+                Default Button
+            </MudText>
+            @{
+                Razor = new MarkupString(@"
+                <div class=""mud-codeblock"">
+                <div class=""html""><pre><span class=""htmlTagDelimiter"">&lt;</span><span class=""htmlElementName"">SDPBCButton</span><span class=""htmlAttributeName""></span> <span class=""htmlAttributeName"">OnClick</span><span class=""htmlOperator"">=</span><span class=""quot"">""</span><span class=""htmlAttributeValue"">MethodGoesHere</span><span class=""quot"">""</span>>Default Primary Button<span class=""htmlTagDelimiter"">&lt;/</span><span class=""htmlElementName"">SDPBCButton</span><span class=""htmlTagDelimiter"">&gt;</span>
+                </pre></div>
+                </div>
+                ");
+            }
+            @* <Code Script="@Razor" Class="mb-2" /> *@
+
+            <SDPBCButton OnClick="@(() => Console.Write("Replace this with a method"))">Default Primary Button</SDPBCButton>
+        </MudCard>
+    </MudItem>
+
+    <MudItem>
+        <MudCard Class="pa-4">
+            <MudText>
+                Loading Button
+            </MudText>
+            <LoadingButton ButtonPressed="OnButtonPress" />
+        </MudCard>
+    </MudItem>
+
+    <MudItem>
+        <MudCard Class="pa-4">
+            <MudCardContent>
+                <MudText>
+                     Button Group
+                </MudText>
+
+                <MudButtonGroup OverrideStyles="false">
+                    <MudButton Color="Color.Primary" Variant="Variant.Filled">One</MudButton>
+                    <MudButton Color="Color.Secondary" Variant="Variant.Filled">Two</MudButton>
+                    <MudButton Color="Color.Tertiary" Variant="Variant.Filled">Three</MudButton>
+                </MudButtonGroup>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+
+    <MudItem>
+        <MudCard>
+            <MudCardContent>
+                <MudText>
+                     Toggle Button
+                </MudText>
+
+                <MudToggleIconButton @bind-Toggled="AlarmOn"
+             Icon="@Icons.Material.Filled.AlarmOff"
+             Color="@Color.Error"
+             ToggledIcon="@Icons.Material.Filled.AlarmOn"
+             ToggledColor="@Color.Success"
+             title="@(AlarmOn ? "On" : "Off")" />
+
+                <span>Alarm is @(AlarmOn ? "On" : "Off")</span>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+</MudStack>
+
+@code {
+    private async Task OnButtonPress()
+    {
+        await Task.Delay(2000);
+    }
+
+    private MarkupString Razor;
+
+    public bool AlarmOn { get; set; }
+
+}

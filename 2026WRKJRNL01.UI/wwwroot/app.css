@@ -1,0 +1,98 @@
+﻿html {
+    font-family: "Roboto", system-ui;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+html,
+body {
+
+}
+
+body {
+ 
+}
+
+a {
+
+}
+ 
+.full-width{
+    width:100%;
+}
+
+.slim-input .mud-input-root-outlined {
+    line-height: 0.25rem !important;
+    color: var(--mud-palette-text-primary) !important;
+}
+
+.slim-input .mud-select {
+    background-color: var(--mud-palette-surface) !important;
+}
+
+/*do not use for components*/
+#sdpbc-page-header {
+    background-color: var(--mud-palette-primary) !important;
+    user-select: none;
+    padding: 0.5rem;
+    height: 7rem;
+    display: block;
+}
+
+#sdpbc-logobar {
+    align-items: flex-start;
+    align-items: center;
+    float: left;
+}
+
+    #sdpbc-logobar .navbar-brand {
+        color: #fff;
+        padding-top: 0.15rem;
+        display: flex !important;
+    }
+
+        #sdpbc-logobar .navbar-brand:hover {
+            color: #fff;
+        }
+
+        #sdpbc-logobar .navbar-brand img {
+            float: left;
+            width: 90px;
+            height: auto;
+            margin-right: 0.5rem;
+        }
+
+    #sdpbc-logobar .org-name {
+        font-size: 2vh;
+        line-height: 1.222em;
+        letter-spacing: -.05em;
+        font-weight: 600;
+        white-space: nowrap;
+        float: left;
+        margin-top: 1vh;
+    }
+
+        #sdpbc-logobar .org-name span {
+            text-transform: none;
+            font-size: .846em;
+            letter-spacing: .05em;
+            font-weight: 500;
+        }
+
+.appBarAlt {
+    margin-top: 3.5rem;
+}
+
+.text-overflow {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+    -webkit-box-orient: vertical;
+}
+
+@property --district-blue {
+    syntax: "<color>";
+    inherits: false;
+    initial-value: var(--mud-palette-primary);
+}

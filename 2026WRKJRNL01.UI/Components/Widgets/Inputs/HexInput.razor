@@ -1,0 +1,21 @@
+﻿<MudField Label="@Label" Variant="@Variant">
+    <input type="color" style="cursor: pointer;" value="@HexColor" onclick="" onchange="@OnTextChanged" />
+    <span class="ml-3">@HexColor</span>
+</MudField>
+
+@code {
+    [Parameter, EditorRequired] public EventCallback<string> TextChanged { get; set; }
+
+    [Parameter] public string HexColor { get; set; } = "#ffffff";
+
+    [Parameter] public string Label { get; set; } = "Pick a color";
+
+    [Parameter] public Variant Variant { get; set; } = Variant.Outlined;
+
+    private async Task OnTextChanged(ChangeEventArgs e)
+    {
+        HexColor = e.Value?.ToString() ?? "#ffffff";
+
+        await TextChanged.InvokeAsync(HexColor);
+    }
+}

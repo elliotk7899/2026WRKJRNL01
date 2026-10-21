@@ -1,0 +1,63 @@
+﻿@* 
+    https://mudblazor.com/components/dialog#usage
+
+    Place this on the page that calls the dialog
+
+    @inject IDialogService DialogService
+
+<MudButton @onclick="OpenDialogAsync" Variant="Variant.Filled" Color="Color.Primary">
+    Open simple dialog
+</MudButton>
+@code {
+
+    private Task OpenDialogAsync()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+
+        return DialogService.ShowAsync<DialogUsageExample_Dialog>("Simple Dialog", options);
+    }
+
+    var parameters = new DialogParameters<DialogPassingDataExample_Dialog> { { x => x.Server, server } };
+
+        var dialog = await DialogService.ShowAsync<DialogPassingDataExample_Dialog>("Delete Server", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            //In a real world scenario we would reload the data from the source here since we "removed" it in the dialog already.
+            Guid.TryParse(result.Data.ToString(), out Guid deletedServer);
+            Servers.RemoveAll(item => item.Id == deletedServer);
+        }
+} *@
+
+<MudDialog>
+
+    <TitleContent>
+       @Title
+    </TitleContent>
+
+    <DialogContent>
+      @Body
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit">OK</MudButton>
+    </DialogActions>
+
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; }
+
+    [Parameter]
+    public string Body { get; set; }
+
+    [Parameter]
+    public string Title { get; set; }
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(true));
+
+    private void Cancel() => MudDialog.Cancel();
+}

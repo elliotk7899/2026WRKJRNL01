@@ -1,0 +1,28 @@
+﻿@page "/about"
+
+<h3>About</h3>
+
+<MudStack AlignItems="AlignItems.Center">
+    @if (clickCount >= 5)
+    {
+        <iframe width="1280" height="720" style="width: 1280px !important; height: 720px !important;" src="https://www.youtube.com/embed/tgbNymZ7vqY?si=uwD6L0KKcjcqdgRc&amp;controls=0&autoplay=1&amp;start=108" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+    }
+    else
+    {
+        <MudImage onclick="@OnClick" ObjectFit="ObjectFit.ScaleDown" Src="https://www2.palmbeachschools.org/Images/DistrictLogo128.png" />
+
+        <MudText Typo="Typo.h3" Align="Align.Center">
+            Design & Development Team
+        </MudText>
+
+        <MudText Typo="Typo.h6" Align="Align.Center">
+            2025 &copy; Palm Beach County School District. All rights reserved.
+        </MudText>
+    }
+</MudStack>
+
+@code {
+    private int clickCount;
+
+    private void OnClick() => clickCount++;
+}

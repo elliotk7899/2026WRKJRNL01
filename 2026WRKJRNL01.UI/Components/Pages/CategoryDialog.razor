@@ -1,0 +1,132 @@
+﻿@inherits AppComponentBase
+
+@using MudBlazor.Utilities
+@using WRKJRNL01.Data.Models
+@using WRKJRNL01.Data.Repository
+@using _2026WRKJRNL01.UI.Components.Layout
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudStack Row AlignItems="AlignItems.Center">
+            <MudIcon Icon="fa-solid fa-clipboard" />
+            <MudText Typo="Typo.h6"> @OpenType Category</MudText>
+        </MudStack>
+    </TitleContent> 
+
+    <DialogContent>
+        <MudForm @ref="CatForm" @bind-IsValid="ValidCat">
+            <MudTextField @bind-Value="CatName" @ref="NameField" MaxLength="64" Label="Name" Variant="Variant.Outlined" Required="true" RequiredError="Name is required!"></MudTextField>
+            <MudColorPicker Label="Color" @bind-Value="CatColor" Variant="Variant.Outlined" Required="true" RequiredError="Color is required!" ColorPickerView="ColorPickerView.Palette" Palette="CategoryPalette" />
+        </MudForm>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel" Color="Color.Dark" Variant="Variant.Filled">Cancel</MudButton>
+        <MudButton OnClick="Create" StartIcon="fa-solid fa-plus" Variant="Variant.Filled" Color="Color.Success" Disabled="@(!ValidCat)">@OpenType</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private MudForm CatForm;
+    private bool ValidCat;
+    private string CatName { get; set; }
+    private MudColor CatColor;
+
+    [Inject] protected CatRepo CatRepo { get; set; } = default!;
+
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public string OpenType { get; set; } = "Create";
+
+    [Parameter] public Category Given { get; set; } = new Category();
+
+    private readonly IEnumerable<MudColor> CategoryPalette = new List<IEnumerable<MudColor>>
+    {
+        MudColor.GenerateTintShadePalette("#DC143C", tintStep: 0),
+        MudColor.GenerateTintShadePalette("#1E90FF", tintStep: 0),
+        MudColor.GenerateTintShadePalette("#00c853", tintStep: 0),
+        MudColor.GenerateTintShadePalette("#ff9800", tintStep: 0),
+        MudColor.GenerateTintShadePalette("#8f4af7", tintStep: 0),
+        MudColor.GenerateTintShadePalette("#f74fe1", tintStep: 0),
+        MudColor.GenerateGradientPalette("#939193", "#000000")
+    }.SelectMany(palette => palette);
+
+    #region AutoFocus field
+    private MudTextField<string>? NameField;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && NameField is not null)
+        {
+            await Task.Delay(10);
+
+            await NameField.FocusAsync();
+        }
+    }
+    #endregion
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (OpenType == "Edit")
+        {
+            CatName = Given.Name;
+            CatColor = new MudColor(Given.Color);
+
+            StateHasChanged();
+
+            while (CatForm is null)
+            {
+                await Task.Delay(100);
+            }
+
+            await CatForm.ValidateAsync();
+        }
+    }
+
+    private async Task Create()
+    {
+        if (OpenType == "Edit")
+        {
+            Given.Name = CatName;
+            Given.Color = CatColor.ToString(MudColorOutputFormats.Hex);
+            Given.Lcts = DateTime.Now;
+            Given.DeptId = AppState.DeptId;
+            Given.EmplId = AppState.EmployeeId;
+
+            await CatRepo.Upsert(Given);
+
+            Snackbar.Configuration.PositionClass = Defaults.Classes.Position.BottomLeft;
+            Snackbar.Add(Given.Name + " category edited!", Severity.Warning);
+
+            MudDialog.Close(DialogResult.Ok(Given));
+        } 
+        else
+        {
+            Category NewCategory = new Category()
+            {
+                Name = CatName,
+                Color = CatColor.ToString(MudColorOutputFormats.Hex),
+                Lcts = DateTime.Now,
+                EmplId = AppState.EmployeeId,
+                DeptId = AppState.DeptId
+            };
+
+            //attempt to insert it into dbase
+            var result = await CatRepo.Upsert(NewCategory);
+
+            if (result != null && !string.IsNullOrEmpty(result.Error))
+            {
+                Snackbar.Add($"{result.Error}", Severity.Error);
+                return;
+            }
+
+            Snackbar.Configuration.PositionClass = Defaults.Classes.Position.BottomLeft;
+            Snackbar.Add(NewCategory.Name + " category created!", Severity.Success);
+
+            MudDialog.Close(DialogResult.Ok(NewCategory));
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

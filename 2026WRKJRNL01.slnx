@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="2026WRKJRNL01.Data/2026WRKJRNL01.Data.csproj" />
+  <Project Path="2026WRKJRNL01.Notifications/2026WRKJRNL01.NotificationSvc.csproj" Id="f6cd3885-5423-4229-bc1e-c60d7e6eb686" />
+  <Project Path="2026WRKJRNL01.Shared/2026WRKJRNL01.Shared.csproj" Id="3729d73e-24bd-4be3-b28d-d6fe6c2194c7" />
+  <Project Path="2026WRKJRNL01.UI/2026WRKJRNL01.UI.csproj" />
+</Solution>

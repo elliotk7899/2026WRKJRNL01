@@ -1,0 +1,23 @@
+﻿@using WRKJRNL01.Data.Repository
+
+<MudDatePicker Editable="true"
+               PickerVariant="PickerVariant.Static"
+               FirstDayOfWeek="DayOfWeek.Monday"
+               Date="SelectedDay"
+               DateChanged="SendDataToParent"
+               Style="border: 1px solid var(--mud-palette-lines-inputs); max-width: 380px;" />
+
+@code {
+    DateTime? SelectedDay = DateTime.Today;
+
+    [Parameter]
+    public EventCallback<DateTime?> DataToParent { get; set; }
+
+    //method to send data to parent
+    private async Task SendDataToParent(DateTime? value)
+    {
+        SelectedDay = value;
+
+        await DataToParent.InvokeAsync(SelectedDay);
+    }
+}

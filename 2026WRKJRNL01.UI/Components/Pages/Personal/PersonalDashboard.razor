@@ -1,0 +1,366 @@
+﻿@inherits AppComponentBase
+
+@page "/my-dashboard"
+
+@using Classes
+@using Microsoft.AspNetCore.Components.Authorization
+@using SDPBC.Employees.BlazorUI.Mud
+@using SDPBC.Employees.Types
+@using WRKJRNL01.Data.Models
+@using WRKJRNL01.Data.Repository
+@using WRKJRNL01.Data.Services
+@using _2026WRKJRNL01.UI.Components.Layout
+@using _2026WRKJRNL01.UI.Components.Tasks
+
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>@AppState.PageTitle</PageTitle>
+
+<AuthorizeView>
+    <NotAuthorized>
+        <label class="alert alert-danger">
+            You are not authorized to view this page.
+        </label>
+    </NotAuthorized>
+
+    <Authorized>
+
+        @if (!IsLoaded)
+        {
+            <MudProgressLinear Indeterminate />
+        }
+        else
+        {
+            <MudStack>
+                <MudGrid>
+
+                    <!-- LEFT SIDE -->
+                    <MudItem xs="8">
+                        <MudStack Spacing="4">
+
+                            <MudStack Row Justify="Justify.FlexEnd">
+
+                                <MudTooltip>
+                                    <ChildContent>
+                                        <MudText>
+                                            Existing Tasks: @TasksInRange.Count
+                                        </MudText>
+                                    </ChildContent>
+
+                                    <TooltipContent>
+                                        @foreach (var task in TasksInRange)
+                                        {
+                                            <MudText Typo="Typo.body2">
+                                                @task.Name
+                                            </MudText>
+                                        }
+                                    </TooltipContent>
+                                </MudTooltip>
+
+                                <MudTooltip>
+                                    <ChildContent>
+                                        <MudText>
+                                            Existing Categories: @Categories.Count
+                                        </MudText>
+                                    </ChildContent>
+
+                                    <TooltipContent>
+                                        @foreach (var category in pielabels)
+                                        {
+                                            <MudText Typo="Typo.body2">
+                                                @category
+                                            </MudText>
+                                        }
+                                    </TooltipContent>
+                                </MudTooltip>
+
+                                <MudButton Size="Size.Small"
+                                           StartIcon="fa-solid fa-plus"
+                                           Color="Color.Success"
+                                           Variant="Variant.Filled"
+                                           OnClick="OpenCategoryDialogAsync">
+                                    New Category
+                                </MudButton>
+
+                                <MudButton Size="Size.Small"
+                                           StartIcon="fa-solid fa-pencil"
+                                           Color="Color.Warning"
+                                           Variant="Variant.Filled"
+                                           OnClick="OpenCategoryEditDialogAsync">
+                                    Edit Existing Category
+                                </MudButton>
+
+                            </MudStack>
+
+                            <TaskList RowCount="5"
+                                      Items="TasksInRange"
+                                      SelectedTask="SelectedTask"
+                                      SelectedTaskChanged="OnSelectedTask"
+                                      OnPageChanged="(tasksFromList) => UpdatePie(tasksFromList)"
+                                      OnRowsPageChanged="(tasksFromList) => UpdatePie(tasksFromList)"
+                                      OnEditTask="(task) => OnEdit(task)"
+                                      OnDeleteTask="(task) => OnDelete(task)" />
+
+                        </MudStack>
+                    </MudItem>
+
+                    <!-- RIGHT SIDE -->
+                    <MudItem xs="4">
+                        <MudStack>
+
+                            <MudStack Row>
+                                <MudButton StartIcon="fa-solid fa-calendar-range"
+                                           Size="Size.Small"
+                                           Variant="Variant.Filled"
+                                           Color="Color.Primary"
+                                           OnClick="OpenDateRangeDialogAsync">
+                                    Change Date Range
+                                </MudButton>
+                            </MudStack>
+
+                            <MudStack>
+                                <MudText Style="text-align: left;">
+                                    (@($"{dateRange.Start.GetValueOrDefault():MM/dd/yyyy} - {dateRange.End.GetValueOrDefault():MM/dd/yyyy}"))
+                                </MudText>
+
+                                @if (TasksInRange.Count == 0)
+                                {
+                                    <MudAlert Variant="Variant.Filled" Severity="Severity.Warning">
+                                        No tasks found.
+                                    </MudAlert>
+                                }
+                                else
+                                {
+                                    <MudChart ChartType="ChartType.Pie"
+                                              ChartSeries="@piedata.AsChartDataSet()"
+                                              ChartLabels="@pielabels"
+                                              ChartOptions="PieOptions"
+                                              Style="display: block; margin-right: auto; margin-left: auto" />
+                                }
+                            </MudStack>
+
+                        </MudStack>
+                    </MudItem>
+
+                </MudGrid>
+            </MudStack>
+        }
+
+    </Authorized>
+</AuthorizeView>
+
+<style>
+    .selected {
+        background-color: var(--mud-palette-primary) !important;
+    }
+
+        .selected > td {
+            color: white !important;
+        }
+
+            .selected > td .mud-input {
+                color: white !important;
+            }
+</style>
+
+@code {
+    private string Title { get; set; } = "My Dashboard";
+    private DateRange dateRange { get; set; } = new DateRange(DateTime.Today.AddDays(-7), DateTime.Today);
+    private double[] piedata = Array.Empty<double>();
+    private string[] pielabels = Array.Empty<string>();
+    private string[] piecolors = Array.Empty<string>();
+    private List<Tasque> TasksInRange = new();
+    private Tasque? SelectedTask;
+    private bool IsLoaded;
+    private Journal Journal = new();
+    private List<Category> Categories { get; set; } = new();
+    private ChartOptions PieOptions = new();
+    [Inject] protected TaskRepo TaskRepo { get; set; } = default!;
+    [Inject] protected TaskService TaskService { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await AppState.Initialization;
+        await OnRefresh();
+    }
+
+    protected override void OnInitialized()
+    {
+        AppState.OnChange += StateHasChanged;
+        AppState.PageTitle = Title;
+    }
+
+    private async Task OnRefresh()
+    {
+        IsLoaded = false;
+        await GetCategories();
+        dateRange ??= new DateRange(DateTime.Today.AddDays(-7), DateTime.Today);
+        await GetTasks();
+        UpdatePie(TasksInRange);
+        IsLoaded = true;
+        StateHasChanged();
+    }
+
+    private async Task GetCategories()
+    {
+        Categories = await TaskService.GetAllCategoriesAsync(AppState.DeptId,true);
+    }
+
+    private async Task GetTasks()
+    {
+        if (string.IsNullOrEmpty(AppState.EmployeeId))
+        {
+            TasksInRange = new();
+            return;
+        }
+
+        TasksInRange = await TaskRepo.GetAllTasksAsync(
+            AppState.EmployeeId,
+            dateRange.Start.GetValueOrDefault(),
+            dateRange.End.GetValueOrDefault(),
+            false);
+    }
+
+    private void UpdatePie(List<Tasque> tasks)
+    {
+        Journal.Categories = tasks
+            .Select(t => t.TaskCategory)
+            .ToList();
+
+        pielabels = new string[Categories.Count];
+        piedata = new double[Categories.Count];
+        piecolors = new string[Categories.Count];
+
+        for (int i = 0; i < Categories.Count; i++)
+        {
+            piedata[i] = Journal.HoursInCategoryInRange( Categories[i],tasks);
+            pielabels[i] = $"{Categories[i].Name} ({piedata[i]} Hours)";
+            piecolors[i] = Categories[i].Color;
+        }
+
+        PieOptions.ChartPalette = piecolors;
+    }
+
+
+    private Task OnSelectedTask(Tasque? task)
+    {
+        SelectedTask = task;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+
+    private async Task OnEdit(Tasque task)
+    {
+        SelectedTask = task;
+        await OpenDialogEditAsync();
+    }
+
+    private async Task OnDelete(Tasque task)
+    {
+        var copy = task;
+        TaskRepo.Remove(task, false);
+        await OnRefresh();
+        Snackbar.Add($"Task {copy.Name} deleted.", Severity.Error);
+    }
+
+    private async Task OpenDialogEditAsync()
+    {
+        var options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            CloseButton = true
+        };
+
+        var parameters = new DialogParameters
+        {
+            { "SelectedDay", Journal.FindTaskDate(SelectedTask) },
+            { "Journal", Journal },
+            { "Categories", Categories },
+            { "SelectedTask", SelectedTask }
+        };
+
+        var dialog = await DialogService.ShowAsync<EditTaskDialog>(
+            "Edit Task",
+            parameters,
+            options);
+
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            // Refresh from DB rather than assuming the local object
+            // contains every change made by the dialog.
+            await OnRefresh();
+        }
+    }
+
+
+    private async Task OpenCategoryDialogAsync()
+    {
+        var options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            CloseButton = true
+        };
+
+        var dialog = await DialogService.ShowAsync<CategoryDialog>(
+            "New Category",
+            options);
+
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await OnRefresh();
+        }
+    }
+
+
+    private async Task OpenCategoryEditDialogAsync()
+    {
+        var options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            CloseButton = true
+        };
+
+        var dialog = await DialogService.ShowAsync<ManageCategoryDialog>(
+            "Manage Categories",
+            options);
+
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await OnRefresh();
+        }
+    }
+
+
+    private async Task OpenDateRangeDialogAsync()
+    {
+        var options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            CloseButton = true
+        };
+
+        var dialog = await DialogService.ShowAsync<DateRangeDialog>(
+            "Change Date Range",
+            options);
+
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            dateRange = await dialog.GetReturnValueAsync<DateRange>();
+
+            await OnRefresh();
+        }
+    }
+}

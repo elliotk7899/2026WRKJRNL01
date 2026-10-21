@@ -1,0 +1,13 @@
+﻿[
+   {
+      "SchemaName": "dbo",
+      "Tables": [
+         {
+            "Columns": [ ],
+            "Name": "Tasks",
+            "NewName": "Tasque"
+         }
+      ],
+      "UseSchemaName": false
+   }
+]

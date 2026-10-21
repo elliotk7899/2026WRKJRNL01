@@ -1,0 +1,23 @@
+@* LOCAL AUTH SHIM
+   Replaces SDPBC.Authentication.BlazorUI.Mud.Components.CurrentUserComponent (from the
+   private NuGet package) with a local version that shows the configured local user.
+   Declared in the original namespace so existing markup references compile unchanged. *@
+@namespace SDPBC.Authentication.BlazorUI.Mud.Components
+@using _2026WRKJRNL01.UI.Components.Auth
+
+<MudStack Row="false" Spacing="0" Style="@Style">
+    <MudText Typo="Typo.body2">
+        @LocalUser.User.FirstName @LocalUser.User.LastName
+    </MudText>
+    <MudText Typo="Typo.caption">
+        @string.Join(", ", LocalUser.User.Roles)
+    </MudText>
+</MudStack>
+
+@code {
+    [Inject] private LocalUserProvider LocalUser { get; set; } = default!;
+
+    // Parameters mirror the original component's API so existing usages don't break.
+    [Parameter] public bool ShowGlobalIDTypeBadge { get; set; }
+    [Parameter] public string? Style { get; set; }
+}

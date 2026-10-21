@@ -1,0 +1,287 @@
+﻿@inherits AppLayoutBase
+
+@inject IJSRuntime JS
+@inject ISnackbar Snackbar
+@inject LayoutState LayoutState
+
+@using WRKJRNL01.UI.Components.Settings
+@using _2026WRKJRNL01.UI.Components.Layout.Nav
+
+<MudThemeProvider Theme="@Theme" IsDarkMode="@IsDarkMode" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudOverlay Visible="@AppState.OverlayVisible" DarkBackground ZIndex="2000">
+        <MudProgressCircular Indeterminate="true" />
+    </MudOverlay>
+
+    <Header />
+
+    <TopAppBar ToggleDarkMode="@SetDarkMode" ToggleDrawer="@(() => LayoutState.ToggleDrawer(DisposalCts.Token))" IsDarkMode="@IsDarkMode" />
+
+    <MudDrawer Open="@LayoutState.DrawerOpen"
+               Class="drawer-menu"
+               Breakpoint="Breakpoint.Lg"
+               ClipMode="@DrawerClipMode.Docked"
+               Elevation="25"
+               Fixed="true"
+               MiniWidth="2.75rem"
+               Width="13rem"
+               Variant="@DrawerVariant.Mini">
+        <DrawerMenu />
+    </MudDrawer>
+
+    <MudMainContent>
+        <MudContainer class="mt-18 pb-14" MaxWidth="MaxWidth.ExtraLarge">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+
+    <Footer />
+</MudLayout>
+
+<div id="blazor-error-ui">
+    An unhandled error has occurred.
+    <a href="" class="reload">Reload</a>
+    <a class="dismiss">🗙</a>
+</div>
+
+@code {
+    private Action? AppStateChangedHandler;
+
+    private bool ThemesSetup;
+
+    private bool IsDarkMode { get; set; }
+
+    private MudTheme? Theme = null;
+
+    private MudThemeProvider MudThemeProvider = default!;
+
+    private string SelectedTheme = "Default";
+
+    private readonly CancellationTokenSource DisposalCts = new();
+
+    public async Task SetDarkMode(bool isDarkMode)
+    {
+        IsDarkMode = isDarkMode;
+
+        AppState.IsDarkMode = isDarkMode;
+
+        await JS.InvokeVoidAsync("localStorage.setItem", "darkMode", IsDarkMode.ToString());
+
+        StateHasChanged();
+    }
+
+    protected override void OnInitialized()
+    {
+        SetupThemes();
+
+        LayoutState.OnChange += StateHasChanged;
+        
+        AppStateChangedHandler = async () =>
+        {
+            await InvokeAsync(StateHasChanged);
+            await SetSelectedTheme();
+        };
+
+        AppState.OnChange += AppStateChangedHandler;
+    }
+
+    public override void Dispose()
+    {
+        LayoutState.OnChange -= StateHasChanged;
+
+        if (AppStateChangedHandler is not null)
+        {
+            AppState.OnChange -= AppStateChangedHandler;
+        }
+
+        DisposalCts.Cancel();
+        DisposalCts.Dispose();
+
+        base.Dispose();
+    }
+
+    private async Task GetSelectedTheme(CancellationToken token = default)
+    {
+        if (DisposalCts.Token.IsCancellationRequested)
+            return;
+
+        try
+        {
+            var result = await JS.InvokeAsync<string>("localStorage.getItem", token, "theme");
+
+            SelectedTheme = string.IsNullOrEmpty(result) ? "Default" : result;
+        }
+        catch (TaskCanceledException)
+        {
+            // Component disposed or operation cancelled - use fallback value
+            SelectedTheme = "Default";
+            return;
+        }
+        catch (JSDisconnectedException)
+        {
+            // Circuit disconnected - use fallback value and log
+            //Logger.LogWarning("Circuit disconnected while getting theme preference. Using default theme.");
+            SelectedTheme = "Default";
+            return;
+        }
+        catch (Exception)
+        {
+            //Logger.LogError("Error getting theme preference from local storage.");
+            SelectedTheme = "Default";
+            return;
+        }
+
+        if (AppState.Themes.ContainsKey(SelectedTheme))
+        {
+            Theme = AppState.Themes[SelectedTheme];
+
+            AppState.SelectedTheme = SelectedTheme;
+        }
+
+        if (!DisposalCts.Token.IsCancellationRequested)
+        {
+            StateHasChanged();
+        }
+    }
+
+    private async Task SetSelectedTheme()
+    {
+        if (string.IsNullOrEmpty(AppState?.SelectedTheme) || SelectedTheme == AppState?.SelectedTheme)
+        {
+            return;
+        }
+
+        SelectedTheme = string.IsNullOrEmpty(AppState?.SelectedTheme) ? "Default" : AppState.SelectedTheme;
+
+        if (AppState != null && AppState.Themes.ContainsKey(SelectedTheme))
+        {
+            Theme = AppState?.Themes[SelectedTheme];
+
+            await JS.InvokeVoidAsync("localStorage.setItem", "theme", SelectedTheme);
+
+            await JS.InvokeVoidAsync("localStorage.setItem", "darkMode", IsDarkMode);
+
+            Snackbar.Add($"Theme {AppState?.SelectedTheme} applied.", Severity.Success);
+        } 
+        else
+        {
+            await JS.InvokeVoidAsync("localStorage.setItem", "theme", "Default");
+
+            Snackbar.Add($"Theme {AppState?.SelectedTheme} was not found.", Severity.Error);
+        }
+
+        StateHasChanged();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        await AppState.Initialization;
+
+        await SetDrawerState();
+
+        await GetSelectedTheme();
+
+        await SetupMode();
+
+        StateHasChanged();
+    }
+
+    private async Task SetupMode()
+    {
+        // Load preference from local storage
+        var darkMode = await JS.InvokeAsync<string>("localStorage.getItem", "darkMode");
+
+        if (darkMode != null && bool.TryParse(darkMode, out bool isDark))
+        {
+            IsDarkMode = isDark;
+        }
+        else
+        {
+            //no theme set in cookies, check system
+            if (MudThemeProvider != null)
+            {
+                IsDarkMode = await MudThemeProvider.GetSystemDarkModeAsync();
+            }
+            else
+            {
+                IsDarkMode = false;
+            }
+        }
+
+        AppState.IsDarkMode = IsDarkMode;
+    }
+
+    private void SetupThemes()
+    {
+        if (ThemesSetup || AppState.Themes.Count > 0) return;
+
+        AppState.Themes.Add("Default", new MudTheme()
+        {
+            PaletteLight = Themes.DefaultLightPalette,
+            PaletteDark = Themes.DefaultDarkPalette,
+            LayoutProperties = new LayoutProperties()
+        });
+
+        AppState.Themes.Add("Pink", new MudTheme()
+        {
+            PaletteLight = Themes.PinkLight,
+            PaletteDark = Themes.PinkDark,
+            LayoutProperties = new LayoutProperties()
+        });
+
+        AppState.Themes.Add("Unit 01", new MudTheme()
+        {
+            PaletteLight = Themes.Unit01Light,
+            PaletteDark = Themes.Unit01Dark,
+            LayoutProperties = new LayoutProperties()
+        });
+
+        AppState.Themes.Add("Paladin", new MudTheme()
+        {
+            PaletteLight = Themes.PaladinLight,
+            PaletteDark = Themes.PaladinDark,
+            LayoutProperties = new LayoutProperties()
+        });
+
+        AppState.Themes.Add("The Empire", new MudTheme()
+        {
+            PaletteLight = Themes.EmpireThemeLight,
+            PaletteDark = Themes.EmpireThemeDark,
+            LayoutProperties = new LayoutProperties()
+        });
+
+        AppState.Themes.Add("The Rebellion", new MudTheme()
+        {
+            PaletteLight = Themes.RebelThemeLight,
+            PaletteDark = Themes.RebelThemeDark,
+            LayoutProperties = new LayoutProperties()
+        });
+
+        //apply selected theme if exists
+        if (AppState.Themes.ContainsKey(SelectedTheme))
+        {
+            Theme = AppState.Themes[SelectedTheme];
+        }
+
+        ThemesSetup = true;
+    }
+
+    private async Task SetDrawerState(CancellationToken token = default)
+    {
+        if (token.IsCancellationRequested)
+            return;
+
+        var result = await JS.InvokeAsync<string>("localStorage.getItem", token, "drawer");
+
+        if (result == "True")
+        {
+            LayoutState.SetDrawer(false);
+        }
+    }
+}

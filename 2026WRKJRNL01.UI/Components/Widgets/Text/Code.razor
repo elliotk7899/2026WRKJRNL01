@@ -1,0 +1,56 @@
+﻿<MudStack @attributes="AdditionalAttributes">
+<h4>@Title</h4>
+
+<pre class="code">
+    <code class="@($"language-{Language}")" id="test">
+        @ChildContent
+    </code>
+</pre>
+</MudStack>
+
+<style>
+    .hljs {
+        background-color: var(--mud-palette-background-gray) !important;
+        color: var(--mud-palette-text-primary) !important;
+    }
+</style>
+
+<script>
+    function copyText(id) {
+      const textElement = document.getElementById(id);
+
+      const text = textElement.innerText;
+
+      navigator.clipboard.writeText(text)
+    }
+
+    window.getInnerHtml = function (elementId) {
+            const el = document.getElementById(elementId);
+            return el ? el.innerHTML : "";
+        };
+</script>
+
+@code {
+    
+[Parameter(CaptureUnmatchedValues = true)]
+public Dictionary<string, object> AdditionalAttributes { get; set; }
+
+
+    [Inject] private IJSRuntime JS { get; set; }
+
+    [Parameter] public RenderFragment ChildContent { get; set; }
+
+    [Parameter] public string Title { get; set; } = "Code";
+
+    [Parameter] public string Language { get; set; } = "csharp";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await JS.InvokeVoidAsync("highlightSnippet");
+    }
+
+    private async Task CopyFunc(string element)
+    {
+        await JS.InvokeVoidAsync("copyText", element);
+    }
+}

@@ -1,0 +1,252 @@
+﻿@using WRKJRNL01.Data.Models
+@using WRKJRNL01.Data
+<MudTable 
+    @ref="_table" 
+    T="Tasque"
+    Items="Items" Hover="true" Filter="new Func<Tasque, bool>(FilterFunc1)" 
+    @bind-SelectedItem="SelectedTask" 
+    @bind-CurrentPage="CurrentPage"
+    @bind-CurrentPage:after="() => PageChangeEvent(CurrentPage)"
+    RowClassFunc="@SelectedRowClassFunc"
+    OnRowClick="@RowClickEvent"
+    RowsPerPage="15"
+    RowsPerPageChanged="RowsPerPageChangedEvent">
+
+    <ToolBarContent>
+
+        <MudText Typo="Typo.h6">Tasks</MudText>
+
+        <MudSpacer />
+
+        <MudTextField @bind-Value="searchString1"
+        Placeholder="Search" 
+        Adornment="Adornment.Start"
+        AdornmentIcon="@Icons.Material.Filled.Search"
+        IconSize="Size.Medium"/>
+
+        <MudSpacer />
+
+        <MudStack Row>
+            @if (OnNewTaskClicked.HasDelegate)
+            {
+                <MudButton Size="Size.Small" StartIcon="fa-solid fa-plus" Color="Color.Success" Variant="Variant.Filled" OnClick="OnNewTaskClicked">Task</MudButton>
+            }
+            @if (OnNewCatClicked.HasDelegate)
+            {
+                <MudButton Size="Size.Small" StartIcon="fa-solid fa-plus" Color="Color.Secondary" Variant="Variant.Filled" OnClick="OnNewCatClicked">Category</MudButton>
+            }
+        </MudStack>
+
+    </ToolBarContent>
+
+    <HeaderContent>
+        <MudTh>
+            <MudTableSortLabel SortBy="new Func<Tasque, object>(x => Items.IndexOf(x) + 1)">#</MudTableSortLabel>
+        </MudTh>
+
+        <MudTh>
+            <MudText>Selected</MudText>
+        </MudTh>
+
+        @if (ShowEmployee)
+        {
+            <MudTh>
+                <MudTableSortLabel SortBy="new Func<Tasque, object>(x => x.EmplId)">Employee</MudTableSortLabel>
+            </MudTh>
+        }
+
+        <MudTh>
+            <MudTableSortLabel SortBy="new Func<Tasque, object>(x => x.Name)">Name</MudTableSortLabel>
+        </MudTh>
+
+        <MudTh>
+            <MudTableSortLabel SortBy="@((Tasque x) => x.TaskCategory?.Name ?? "Not Found")">
+                Category
+            </MudTableSortLabel>
+        </MudTh>
+
+        <MudTh>
+            <MudTableSortLabel SortBy="new Func<Tasque, object>(x => x.WorkLocation ?? WorkLocation.Other)">Work Location</MudTableSortLabel>
+        </MudTh>
+
+        <MudTh>
+            <MudTableSortLabel SortBy="new Func<Tasque, object>(x => x.Hours)">Duration</MudTableSortLabel>
+        </MudTh>
+     <MudTh />
+    </HeaderContent>
+
+    <RowTemplate>
+        <MudTd DataLabel="#">@(Items.IndexOf(context) + 1)</MudTd>
+
+        <MudTd>
+            <MudCheckBox 
+                T="bool" 
+                @bind-Value="context.IsSelected" 
+                @bind-Value:after="async () => await OnTaskSelected.InvokeAsync()" />
+        </MudTd>
+
+        @if (ShowEmployee) {
+            <MudTd DataLabel="Employee">@context.EmplId</MudTd>
+        }
+
+        <MudTd DataLabel="Name">
+            <MudTooltip Text="@(string.IsNullOrEmpty(context.EventId) ? "User created event." : "Imported event.")">
+                <MudIcon Icon="@(string.IsNullOrEmpty(context.EventId) ? "fa-solid fa-memo-pad" : "fa-solid fa-calendar")" />
+            </MudTooltip>
+            @context.Name
+            </MudTd>
+
+        <MudTd DataLabel="Category">
+            <MudChip T="string"Style="@($"background-color: {context.TaskCategory?.Color}; color: white;")">@(context.TaskCategory?.Name ?? "Not Found")</MudChip>
+        </MudTd>
+
+        <MudTd DataLabel="Work Location">
+            <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Color="@(context.WorkLocation == WorkLocation.Remote? Color.Info : Color.Default)">
+                @(context.WorkLocation ?? WorkLocation.Other)
+            </MudChip>
+        </MudTd>
+
+        <MudTd DataLabel="Duration"> @Math.Round(context.Hours, 2) Hours </MudTd>
+
+        <MudTd Class="text-end">
+            <MudIconButton Icon="fa-solid fa-pen-to-square" OnClick="() => OnEdit(context)" />
+
+           @*  <MudMenu Icon="fa-solid fa-ellipsis">
+                <MudMenuItem Label="Edit" OnClick="() => OnEdit(context)" />
+                <MudMenuItem Label="Delete" OnClick="() => OnDelete(context)" />
+            </MudMenu> *@
+        </MudTd>
+    </RowTemplate>
+
+    <PagerContent>
+        <MudTablePager PageSizeOptions="new int[] { 5, 15, 25, int.MaxValue }" RowsPerPageString="Tasks per page" />
+    </PagerContent>
+</MudTable>
+
+<style>
+    .selected {
+        background-color: var(--mud-palette-gray-light) !important;
+    }
+
+            .selected > td .mud-input {
+                color: white !important;
+            }
+</style>
+
+@code {
+    [Parameter]
+    public bool ShowEmployee { get; set; }
+
+    [Parameter]
+    public int RowCount { get; set; }
+
+    [Parameter]
+    public List<Tasque> Items { get; set; } = new();
+
+    [Parameter]
+    public Tasque? SelectedTask { get; set; }
+
+    [Parameter]
+    public EventCallback<Tasque?> SelectedTaskChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<List<Tasque>> OnPageChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<List<Tasque>> OnRowsPageChanged { get; set; }
+
+    private MudTable<Tasque>? _table;
+
+    [Parameter]
+    public EventCallback OnNewTaskClicked { get; set; }
+
+    [Parameter]
+    public EventCallback OnNewCatClicked { get; set; }
+
+    [Parameter]
+    public EventCallback OnTaskSelected { get; set; }
+
+    [Parameter]
+    public EventCallback<Tasque?> OnEditTask { get; set; }
+
+    [Parameter]
+    public EventCallback<Tasque?> OnDeleteTask { get; set; }
+
+    [Parameter]
+    public int CurrentPage { get; set; }
+
+    private string searchString1 = "";
+    private bool Selected = false;
+    private int SelectedRow = -1;
+
+    //table methods
+    private async Task<List<Tasque>> RowsPerPageChangedEvent(int i)
+    {
+        var currentItems = Items
+            .Where(FilterFunc1)
+            .Skip(CurrentPage * i)
+            .Take(i)
+            .ToList();
+
+        await OnPageChanged.InvokeAsync(currentItems);
+        return currentItems;
+    }
+
+    private async Task<List<Tasque>> PageChangeEvent(int page)
+    {
+        CurrentPage = page;
+
+        var pageSize = _table?.RowsPerPage ?? Items.Count;
+
+        var currentItems = Items
+            .Where(FilterFunc1)
+            .Skip(page * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+        await OnPageChanged.InvokeAsync(currentItems);
+        return currentItems;
+    }
+
+    private string SelectedRowClassFunc(Tasque item, int RowNumber)
+    {
+        if (SelectedTask == item)
+            return "selected";
+        return string.Empty;
+    }
+
+    private async Task RowClickEvent(TableRowClickEventArgs<Tasque> tableRowClickEventArgs)
+    {
+        SelectedTask = tableRowClickEventArgs.Item;
+        await SelectedTaskChanged.InvokeAsync(SelectedTask);
+    }
+
+    private bool FilterFunc1(Tasque element) => FilterFunc(element, searchString1);
+
+    private bool FilterFunc(Tasque element, string searchString)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+        if (element.Name.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (element.TaskCategory.Name.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if ($"{Items.IndexOf(element) + 1} {element.Hours}".Contains(searchString))
+            return true;
+        if (element.WorkLocation.HasValue && element.WorkLocation.Value.ToString().Contains(searchString, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+        return false;
+    }
+
+    private async Task OnEdit(Tasque task)  
+    {
+        await OnEditTask.InvokeAsync(task);
+    }
+
+    private async Task OnDelete(Tasque task)
+    {
+        await OnDeleteTask.InvokeAsync(task);
+    }
+}

@@ -1,0 +1,118 @@
+﻿@using WRKJRNL01.Data.Models
+@using WRKJRNL01.Data.Repository
+@using _2026WRKJRNL01.UI.Components.Layout
+@using _2026WRKJRNL01.UI.Components.Dialogs
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inherits AppComponentBase
+
+<MudDialog>
+    <TitleContent>
+        Manage Categories:
+    </TitleContent>
+
+    <DialogContent>
+
+        <MudStack Style="overflow-y: scroll">
+            @if (Categories.Count == 0)
+            {
+                <MudText>No Categories Available</MudText>
+            }
+
+            @foreach (Category Cat in Categories)
+            {
+                <MudPaper Style="@($"background-color: {Cat.Color}")" Class="pa-3">
+                    <MudStack Row>
+                        <MudText Style="color: white; text-align: left;" Class="pt-3">@Cat.Name</MudText>
+                        
+                        <MudSpacer />
+
+                        <MudMenu Label="Category menu" Style="text-align: right;">
+
+                            <ActivatorContent>
+                                <MudIconButton Icon="@Icons.Material.Filled.MoreHoriz" Style="color: white;" OnClick="() => OpenMenu(context)" />
+                            </ActivatorContent>
+
+                            <ChildContent>
+                                <MudMenuItem Label="Edit" OnClick="() => Edit(Cat)" />
+                                <MudMenuItem @onclick="() => DeleteUserAsync(Cat)" Label="Delete" Style="color: var(--mud-palette-error)" />
+                            </ChildContent>
+                        </MudMenu>
+                    </MudStack>
+                    
+                </MudPaper>
+            }
+        </MudStack>
+        
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Submit" Variant="Variant.Filled" Color="Color.Dark">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Inject] protected CatRepo CatRepo { get; set; } = default!;
+
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; }
+    [Parameter] public string? CatName { get; set; }
+    private MenuContext SelectedCatMenu = null;
+    private List<Category> Categories = new List<Category>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        
+        Categories = await CatRepo.GetAllCategoriesAsync(AppState.DeptId, true);
+    }
+
+    private void OpenMenu(MenuContext Context)
+    {
+        SelectedCatMenu = Context;
+        Context.ToggleAsync();
+    }
+
+    private async Task Edit(Category Cat)
+    {
+        await SelectedCatMenu.ToggleAsync();
+
+        var parameters = new DialogParameters<CategoryDialog> { { x => x.OpenType, "Edit" }, { x => x.Given, Cat}};
+        var CatDialog = await DialogService.ShowAsync<CategoryDialog>("Task Dialog", parameters);
+        var CatResults = await CatDialog.Result;
+
+        StateHasChanged();
+    }
+
+    private async Task DeleteUserAsync(Category Cat)
+    {
+        var parameters = new DialogParameters<DeleteDialog>
+        {
+            { x => x.ContentText, $"Do you really want to delete {Cat.Name}? This cannot be undone." },
+            { x => x.ButtonText, "Delete" },
+            { x => x.Color, Color.Error }
+        };
+
+        var options = new DialogOptions() { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall };
+        var dialog = await DialogService.ShowAsync<DeleteDialog>("Delete", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await DeleteAsync(Cat);
+        }
+    }
+
+    private async Task DeleteAsync(Category Cat)
+    {
+        //JournalDialog.Categories.Remove(Cat);
+
+        await CatRepo.RemoveAsync(Cat);
+        StateHasChanged();
+        Snackbar.Configuration.PositionClass = Defaults.Classes.Position.BottomLeft;
+        Snackbar.Add(Cat.Name + " category removed!", Severity.Error);
+    }
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(true));
+
+    private void Cancel() => MudDialog.Cancel();
+}

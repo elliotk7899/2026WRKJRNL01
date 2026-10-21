@@ -1,0 +1,119 @@
+﻿@inherits _2026WRKJRNL01.UI.Components.Layout.AppComponentBase
+@using SDPBC.Authentication.BlazorUI.Mud.Components
+@using _2026WRKJRNL01.UI.Components.Settings
+
+@inject IJSRuntime JSRuntime
+
+@inject NavigationManager Navigation
+
+<MudAppBar Elevation="25" Fixed="true" Class="appBarAlt" Color="Color.Surface" Style="@($"border-top: 2px solid var(--mud-palette-tertiary); user-select: none;")">
+
+    <MudStack Row Style="width: 100%;" AlignItems="AlignItems.Center">
+
+        <MudIconButton Style="margin-left: 4.5rem;" Icon="fa-solid fa-bars" Color="Color.Inherit" Edge="Edge.End" OnClick="@((e) => DrawerToggle())" />
+
+        <MudStack Row AlignItems="AlignItems.Center" Style="min-width: fit-content;">
+            @if (Navigation.Uri.Split('/').LastOrDefault() != "Home")
+            {
+                <MudIconButton Icon="fa-solid fa-arrow-left" Color="Color.Inherit" OnClick="@GoBack" />
+            }
+
+            <MudText Typo="Typo.h6">@(!string.IsNullOrEmpty(AppState.PageTitle) ? AppState.PageTitle : Navigation.Uri.Split('/').LastOrDefault()?.ToPascalCase())</MudText>
+
+            @if (Program.EnvironmentName != "Production")
+            {
+                <MudText Typo="Typo.caption" Color="Color.Error">(@Program.EnvironmentName)</MudText>
+            }
+        </MudStack>
+
+        <MudSpacer />
+
+        <MudStack class="current-user-comp" Style="min-width: fit-content;">
+            <SDPBC.Authentication.BlazorUI.Mud.Components.CurrentUserComponent ShowGlobalIDTypeBadge="false" Style="color: var(--mud-palette-appbar-text);" />
+        </MudStack>
+
+        <MudIconButton Icon="@(DarkLightModeButtonIcon)" Color="Color.Inherit" OnClick="@DarkModeToggle" title="Toggle Light/Dark Modes" />
+
+        <ThemeMenu />
+
+        <MudIconButton Icon="fa-solid fa-circle-question" Color="Color.Inherit" OnClick="@SupportToggle" title="Support" />
+
+        <UserMenu />
+    </MudStack>
+
+
+</MudAppBar>
+
+@* this hides the person icon that is a part of the impersonation package, a temporary fix *@
+<style>
+    .current-user-comp .mud-icon-root {
+        display: none;
+    }
+
+    .appBarAlt .mud-select.mud-autocomplete {
+        margin-bottom: 0.5rem !important;
+        max-width: 100%;
+    }
+
+    .mud-custom-height .mud-input-control {
+        height: 0.5rem !important;
+    }
+
+    .mud-custom-height .mud-input-slot {
+        height: 0.5rem; /* internal input height */
+        padding-top: 0.75rem !important;
+        padding-bottom: 0.75rem !important;
+    }
+
+</style>
+
+@code {
+    [Parameter]
+    public EventCallback<bool> ToggleDarkMode { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> ToggleDrawer { get; set; }
+
+    [Parameter]
+    public bool IsDarkMode { get; set; }
+
+    private bool DrawerOpen = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        await AppState.Initialization;
+    }
+
+    private void DarkModeToggle()
+    {
+        IsDarkMode = !IsDarkMode;
+
+        ToggleDarkMode.InvokeAsync(IsDarkMode);
+    }
+
+    private void DrawerToggle()
+    {
+        DrawerOpen = !DrawerOpen;
+
+        ToggleDrawer.InvokeAsync(DrawerOpen);
+    }
+
+    private void SupportToggle()
+    {
+
+    }
+
+    public string DarkLightModeButtonIcon => IsDarkMode switch
+    {
+        false => DevTools.IsDebug() ? "fa-brands fa-rebel" : "fa-solid fa-sun",
+        true => DevTools.IsDebug() ? "fa-brands fa-empire" : "fa-solid fa-moon-stars",
+    };
+
+    // Go back in browser using Javascript on a Razor Page
+    private async Task GoBack()
+    {
+        await JSRuntime.InvokeVoidAsync("history.back");
+    }
+}

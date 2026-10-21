@@ -1,0 +1,55 @@
+﻿<MudTextField Mask="@Mask"
+              Label="@Label"
+              @bind-Value="SocialNumber"
+              Clearable
+              Disabled="@Disabled"
+              Immediate
+              Placeholder="@Placeholder"
+              Required="@Required"
+              RequiredError="@RequiredError"
+              TextChanged="OnTextChanged"
+              Variant="@Variant"
+              Validation="ValidateNumber" />
+
+@code {
+    private string SocialNumber { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired] public EventCallback<string> TextChanged { get; set; }
+
+    [Parameter] public bool Disabled { get; set; } = false;
+
+    [Parameter] public bool Required { get; set; } = false;
+
+    [Parameter] public string Label { get; set; } = "Social Security #";
+
+    [Parameter] public string RequiredError { get; set; } = "Social Security Number is required!";
+
+    [Parameter] public string Placeholder { get; set; } = "123-45-6789";
+
+    [Parameter] public Variant Variant { get; set; } = Variant.Outlined;
+
+    private PatternMask Mask = new PatternMask("000-00-0000");
+
+    private string? ValidateNumber(string number)
+    {
+        if (string.IsNullOrWhiteSpace(number))
+            return "Social Security number is required.";
+
+        // Example: US phone number format (XXX) XXX-XXXX or XXX-XXX-XXXX
+        var regex = new System.Text.RegularExpressions.Regex(@"^\d{3}-\d{2}-\d{4}$");
+
+        if (!regex.IsMatch(number))
+            return "Invalid social security number format. Use 123-456-7890.";
+
+        return null; // Valid
+    }
+
+    private async Task OnTextChanged(string value)
+    {
+        //TODO valdation
+
+        SocialNumber = value;
+
+        await TextChanged.InvokeAsync(value);
+    }
+}

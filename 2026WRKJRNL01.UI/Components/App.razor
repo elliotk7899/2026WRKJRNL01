@@ -1,0 +1,80 @@
+﻿@inherits SDPBC.Authentication.BlazorUI.AuthorizedComponentBase
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    @*Tell the browser not to cache our app.  This makes sure the latest version of the scripts and markup are always used.*@
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+
+    @if (Program.EnvironmentName == "Debug" || Program.EnvironmentName == "Production")
+    {
+        <base href="/" />
+    }
+    else
+    {
+        <base href="/2026WRKJRNL01/" />
+    }
+    
+    <HeadOutlet @rendermode="RenderModeForPage" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="app.css" />
+    <link rel="stylesheet" href="fonts.css" />
+    <link rel="stylesheet" href="mud.css" />
+    <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />  
+    <link rel="icon" type="image/ico" href="favicon.png" />
+
+    @*This is code to preview blazor syntax on webpages in non-production envs only*@
+    @if (Program.EnvironmentName != "Production")
+    {
+        Console.WriteLine("Highlight JS Loaded");
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/default.min.css">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/csharp.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/css.min.js"></script>
+        <script>
+                window.highlightSnippet = function() {
+                document.querySelectorAll('pre code').forEach((el)=>{
+                    hljs.highlightBlock(el);
+                });
+            }
+        </script>
+    }
+</head>
+
+<body>
+    <CascadingValue Value="Defaults">
+        <Routes @rendermode="RenderModeForPage" />
+        <script src="https://kit.fontawesome.com/2387acd79c.js" crossorigin="anonymous"></script>
+        <script src="_content/MudBlazor/MudBlazor.min.js"></script>
+        <script src="_framework/blazor.web.js"></script>
+    </CascadingValue>
+</body>
+
+</html>
+ 
+@code {
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    public class AttributeDefaults
+    {
+        public Color ButtonColor { get; set; } = Color.Info;
+        public Variant ButtonVariant { get; set; } = Variant.Filled;
+        public Variant InputVariant { get; set; } = Variant.Outlined;
+    }
+
+    private AttributeDefaults Defaults { get; set; } = new AttributeDefaults();
+
+    //enable this if you want to disable prerendering on specific pages and change the rendermode to RenderModeForPage
+    private IComponentRenderMode? RenderModeForPage => HttpContext.Request.Path.StartsWithSegments("/Account")
+    ? null
+    : new InteractiveServerRenderMode(prerender: false);
+}

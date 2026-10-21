@@ -1,0 +1,179 @@
+﻿@* @using System.Text
+@using Microsoft.EntityFrameworkCore
+@using _2026WRKJRNL01.UI.Components.Settings
+@using WRKJRNL01.Data.Models
+
+@inject AppState AppState
+@inject ISnackbar Snackbar
+@inject IDbContextFactory<SampleDBContext> DbFactory
+
+<MudText Typo="Typo.h6">Upload File Attachment</MudText>
+    <MudFileUpload 
+        T="IBrowserFile" 
+        Accept="*.*" 
+        MaximumFileCount="1" 
+        OnFilesChanged="HandleFileUpload">
+        <ActivatorContent>
+            <MudButton Variant="Variant.Filled"
+                Color="Color.Primary"
+                StartIcon="@Icons.Material.Filled.CloudUpload">
+            </MudButton>
+        </ActivatorContent>
+</MudFileUpload>
+
+@code {
+    private string uploadStatus = string.Empty;
+
+    //Example of parsing a CSV file
+    private async Task<List<Object>> UploadAndParseCSVAsync(IBrowserFile file)
+    {
+        List<Object> collection = new List<Object>();
+
+        bool headerExists = false;
+
+        var fileData = await UploadFile(file);
+
+        using var ms = new MemoryStream(fileData);
+
+        using var reader = new StreamReader(ms, Encoding.UTF8);
+
+        while (!reader.EndOfStream)
+        {
+            var line = await reader.ReadLineAsync();
+
+            if (string.IsNullOrWhiteSpace(line)) continue;
+
+            var columns = line.Split(',').Select(c => c.Trim()).ToList();
+
+            //locate header row
+            if (!headerExists)
+            {
+                if (columns.Any(c => c.Equals("EMPLID", StringComparison.OrdinalIgnoreCase)) &&
+                    columns.Any(c => c.Equals("Direction Number", StringComparison.OrdinalIgnoreCase)))
+                {
+                    headerExists = true;
+                }
+            }
+            else
+            {
+
+
+                if (string.IsNullOrEmpty(columns[0]))
+                {
+                    continue; //skip invalid rows
+                }
+                else
+                {
+                    var employee = new
+                    {
+                        PkId = Guid.NewGuid(),
+                        Lcts = DateTime.UtcNow,
+                        Emplid = columns[0],
+                        LinkId = Guid.NewGuid(), // Generate a new LinkId for each employee
+                    };
+
+                    collection.Add(employee);
+                }
+            }
+        } //end while
+
+        if (!headerExists)
+        {
+            throw new Exception("CSV file must contain both an EMPLID row and a Link row.");
+        }
+        else
+        {
+            //process results
+            return collection;
+        }
+    }
+
+    #region built-in functions
+    private async Task HandleFileUpload(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+
+        await AppState.ShowOverlay(async () =>
+       {
+           try
+           {
+               var fileAttachment = await UploadFile(file);
+
+               // Use factory to create a scoped DbContext instance
+               using var context = await DbFactory.CreateDbContextAsync();
+
+               //build attachment record (replace Attachment with your table name))
+               // context.Attachments.Add(new
+               // {
+               //     PkId = Guid.NewGuid(),
+               //     Lcts = DateTime.UtcNow,
+               //     FileName = file.Name,
+               //     FileMime = file.ContentType,
+               //     FileData = fileAttachment
+               // });
+
+               //save changes and close connection
+               await context.SaveChangesAsync();
+
+               uploadStatus = "File uploaded successfully!";
+           }
+           catch (Exception ex)
+           {
+               uploadStatus = $"Error: {ex.Message}";
+               Snackbar.Add("Error uploading file!", Severity.Error);
+           }
+
+           return true;
+       });
+
+        Snackbar.Add(uploadStatus, Severity.Success);
+    }
+
+    private async Task<byte[]?> UploadFile(IBrowserFile? file)
+    {
+        //no image selected
+        if (file == null) return null;
+
+        byte[]? fileData = null;
+
+        await AppState.ShowOverlay(async () =>
+        {
+            await Task.Delay(10);
+
+            //check for file size
+            if (file.Size > Program.UploadMaxFileSize)
+            {
+                Snackbar.Add($"{file.Name} is too large to upload. Please choose a smaller file.  The maximum size limit is {Program.UploadMaxFileSize / 1000}kb.", Severity.Error);
+                return false;
+            }
+
+            //Content.FileName = file.Name;
+            //Content.FileMime = file.ContentType;
+            fileData = await ConvertFileToByteArr(file);
+            return true;
+        }, true);
+
+        StateHasChanged();
+
+        return fileData;
+    }
+
+    private async Task<byte[]> ConvertFileToByteArr(IBrowserFile file)
+    {
+        // Limit the size of the file we are going to read
+        using (var memoryStream = new MemoryStream())
+        {
+            // Open the file stream with a size limit (adjust based on your requirements)
+            using (var stream = file.OpenReadStream())
+            {
+                // Copy the stream into the memory stream
+                await stream.CopyToAsync(memoryStream);
+            }
+
+            return memoryStream.ToArray();
+        }
+    }
+    #endregion
+}
+
+ *@

@@ -1,0 +1,32 @@
+﻿<!-- MyDefaultButton.razor -->
+<MudButton Color="@Color" Variant="@Variant" OnClick="@HandleClick" Disabled="@Disabled" @attributes="UserAttributes">
+    @ChildContent
+</MudButton>
+
+@code {
+    [Parameter] 
+    public RenderFragment ChildContent { get; set; }
+
+    [Parameter(CaptureUnmatchedValues = true)] 
+    public Dictionary<string, object> UserAttributes { get; set; }
+
+    // Define your desired default values
+    [Parameter]
+    public Color Color { get; set; } = Color.Primary;
+
+    [Parameter]
+    public Variant Variant { get; set; } = Variant.Filled;
+
+    [Parameter]
+    public bool Disabled { get; set; } = false;
+
+    [Parameter]
+    public EventCallback<MouseEventArgs> OnClick { get; set; }
+
+    // This method will be called when the MudButton is clicked.
+    private async Task HandleClick(MouseEventArgs e)
+    {
+        // InvokeAsync notifies the parent component.
+        await OnClick.InvokeAsync(e);
+    }
+}

@@ -1,0 +1,79 @@
+﻿@* Wrap this component inside a MudGrid and MudItem to make it responsive. *@
+<MudStack Class="@($"{Class} {StackClasses}")" Style="@Style">
+    <MudCard>
+        @if(!string.IsNullOrEmpty(Image))
+        {
+            <MudCardMedia Image="@Image" Height="@ImageSize" />
+        }
+        @if(!string.IsNullOrEmpty(Title)) {
+            <MudCardHeader Style="padding-bottom: 0;">
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6">
+                        @if (TitleBold)
+                        {
+                            <b>@Title</b>
+                        }
+                        else
+                        {
+                            @Title
+                        }
+                    </MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+        }
+        <MudCardContent>
+            <MudText Typo="Typo.body1">
+                @ChildContent
+            </MudText>
+        </MudCardContent>
+    </MudCard>
+</MudStack>
+
+<style>
+    .sdpbc-card {
+        border-radius: var(--mud-default-borderradius);
+        border: 1px solid var(--mud-palette-lines-default);
+    }
+        .gradient-bg .mud-card {
+            background: linear-gradient(0deg, var(--mud-palette-surface) 0%, var(--mud-palette-background-gray) 50%);
+        }
+</style>
+
+@code {
+    [Parameter]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool TitleBold { get; set; } = true;
+
+    [Parameter]
+    public string Image { get; set; } = string.Empty;
+
+    [Parameter]
+    public int ImageSize { get; set; } = 200;
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    [Parameter]
+    public bool Gradient { get; set; }
+
+    [Parameter]
+    public bool SideBar { get; set; }
+
+    [Parameter]
+    public string SideBarColor { get; set; } = "var(--mud-palette-primary)";
+
+    [Parameter]
+    public string Class { get; set; } = "";
+
+    [Parameter]
+    public bool Scrollable { get; set; }
+
+    [Parameter]
+    public string Height { get; set; } = "25vh";
+
+    private string StackClasses => $"sdpbc-card {(Gradient ? "gradient-bg " : "")}";
+
+    private string Style => $"{(SideBar ? $" border-left: 8px solid {SideBarColor};" : "")} {(Scrollable ? $" overflow-y: scroll; max-height: {Height};" : "")}";
+}

@@ -1,0 +1,92 @@
+﻿@using System.Reflection
+<MudStack AlignItems="@Alignment">
+    <MudStack Row="true" AlignItems="@Alignment" Style="min-height: 38px;">
+        <MudText Typo="Typo.body1">
+            
+            @* Put the properties of the object that you want displayed as the result below *@
+            @if (string.IsNullOrEmpty(TypeCastResult()) && Result != null)
+            {
+                // Get the type of the anonymous object
+                Type type = Result!.GetType();
+
+                // Get all properties
+                PropertyInfo?[] properties = type.GetProperties();
+
+                //parse props that exist in list if user specified property names
+                if (Properties.Any())
+                {
+                    //sort properties so they appear in the same order they were passing in to the props list
+                    properties = Properties
+                    .Select(name => properties.FirstOrDefault(p => p?.Name == name))
+                    .Where(p => p != null) // Filter out any names that don't match a property
+                    .ToArray();
+                }
+
+                // Loop through each property and get its value
+                foreach (PropertyInfo? prop in properties)
+                {
+                    <span>@prop?.GetValue(Result)&nbsp;</span>
+                    //Console.WriteLine($"{propName}: {propValue}");
+                }
+            }
+            else
+            {
+                <span>@TypeCastResult()</span>
+            }
+
+            @if (ShowBadges)
+            {
+                <MudChip T="string" Size="Size.Small" Color="@BadgeColor">@BadgeLabel</MudChip>
+            }
+        </MudText>
+    </MudStack>
+
+</MudStack>
+
+@if (Striped)
+{
+    <style>
+        .mud-list-item:nth-child(even) {
+            background-color: var(--mud-palette-table-striped);
+        }
+
+        .mud-list-item:hover {
+            background-color: var(--mud-palette-table-hover) !important;
+        }
+    </style>
+}
+
+@code {
+    
+    //this is the alternative method where you can typecast the object into the datatype so you can access all the properties
+    private string TypeCastResult()
+    {
+        string Text = string.Empty;
+
+        //this is how you add the properties of the object to be displayed, and can keep chaining for each property
+        //Text += $"{(YourDataType)Result.FirstName} ";
+
+        return Text;
+    }
+
+    [Parameter]
+    public List<string> Properties { get; set; } = new();
+
+    [Parameter]
+    public dynamic? Result { get; set; }
+
+    [Parameter]
+    public AlignItems Alignment { get; set; } = AlignItems.Start;
+
+    [Parameter]
+    public bool ShowBadges { get; set; } = false;
+
+    [Parameter]
+    public string BadgeLabel { get; set; } = "Active";
+
+    [Parameter]
+    public Color BadgeColor { get; set; } = Color.Success;
+
+    [Parameter]
+    public bool Striped { get; set; } = false;
+}

@@ -1,0 +1,53 @@
+﻿<MudButton draggable="false" Href="@Href" Variant="Variant.Outlined" Class="menu-button mud-elevation-1" Style="@($"width: {Width}; height: {Height};")">
+    <MudStack Class="d-flex align-center flex-wrap flex-grow-1 gap-4">
+        @if (ChildContent == null) {
+            <MudIcon Size="@IconSize" Icon="@Icon" Color="@Color" />
+            <MudText Typo="@FontSize" Align="Align.Center">@Label</MudText>
+        } else {
+            @ChildContent
+        }
+    </MudStack>
+</MudButton>
+
+<style>
+    .menu-button {
+        border:1px solid var(--mud-palette-background-gray) !important;
+        user-select: none;
+    }
+
+    .menu-button:hover {
+            background-color:@HoverColor;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public string Width { get; set; } = "140px";
+
+    [Parameter]
+    public string Height { get; set; } = "140px";
+
+    [Parameter]
+    public string Label { get; set; } = "Button Text";
+
+    [Parameter]
+    public string Icon { get; set; } = "fa-solid fa-city";
+
+    [Parameter]
+    public Size IconSize { get; set; } = Size.Medium;
+
+    [Parameter]
+    public string Href { get; set; } = "/";
+
+    [Parameter]
+    public Typo FontSize { get; set; } = Typo.body1;
+
+    [Parameter]
+    public Color Color { get; set; } = Color.Surface;
+
+    [Parameter]
+    public string HoverColor { get; set; } = "var(--mud-palette-action-default-hover)";
+
+    [Parameter]
+    public RenderFragment ChildContent { get; set; } = null;
+}

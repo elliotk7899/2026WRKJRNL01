@@ -1,0 +1,44 @@
+﻿@page "/samples/searches"
+
+@using SDPBC.Employees.ServiceConnector
+
+<h3>SearchBar Sample</h3>
+
+<MudStack Class="mt-4">
+    <MudText Typo="Typo.h6">Employee Search:</MudText>
+    <AutoComplete Label="Search for Employees" AsyncSearchMethod="EmplSvc.SearchEmployees" OnResultSelected="GetValues" Properties="Props" />
+
+    <MudText Typo="Typo.h6">Univseral Search:</MudText>
+    <SearchBar />
+</MudStack>
+@code {
+    //the employee service is here just as an example, you can use any service or repository that returns a list of objects
+    [Inject] protected EmployeeServiceConnector EmplSvc { get; set; } = default!;
+
+    // This method gets called when a search result is selected and you can extract values from the object or typecast it into the datatype
+    void GetValues(object obj)
+    {
+        //typecast the object into the datatype so it becomes a real object
+        var person = (SDPBC.Employees.Types.EmployeeVM)obj;
+
+        //access the properties of the object
+        Console.WriteLine(person.Email);
+
+        //*** alternatively you can use reflection to get the property values
+        // Console.WriteLine(obj.GetType().GetProperty("FirstName").GetValue(obj));
+    }
+
+    //if you don't typecast the object, you can specify the properties of the object you want displayed in the search results
+    private List<string> Props = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // the properties of the object you want displayed in the search results for each result.
+        // if you don't specify any properties, it will display all the properties of the object
+        Props.Add("FirstName");
+        Props.Add("LastName");
+        Props.Add("EmplId");
+
+        //*** alternatively you can go into SearchResult.razor and typecast the object there using the TypeCastResult method
+    }
+}

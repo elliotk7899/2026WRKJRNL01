@@ -1,0 +1,134 @@
+﻿@using Classes
+@using WRKJRNL01.Data.Models
+@using _2026WRKJRNL01.UI.Components.Tasks
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<MudDialog Options="@DialogOptions" Class="pr-4 pb-4">
+    <TitleContent>
+            <MudStack Row>
+                <MudStack Row AlignItems="AlignItems.Center">
+                    <MudIcon Size="Size.Medium" Icon="fa-solid fa-calendars" />
+                    <MudText Typo="Typo.h6"><b>@Title</b></MudText>
+                </MudStack>
+            </MudStack>
+        </TitleContent>
+
+        <DialogContent>
+
+            <MudStack>
+               <TaskImportList RowCount="5"
+                    Items="@Items"
+                    OnEditTask="OpenEditTaskDialogAsync"
+                    OnDeleteTask="DeleteTaskLocal" 
+                    OnTaskSelected="() => StateHasChanged()"          />
+            </MudStack>
+
+        </DialogContent>
+
+        <DialogActions>
+                <MudButton Color="Color.Dark"
+                            StartIcon="@CancelButtonIcon"
+                            IconSize="Size.Small"
+                           Variant="Variant.Filled"
+                           OnClick="Cancel">
+                    Cancel
+                </MudButton>
+
+                <MudButton Color="@Color"
+                           StartIcon="@ButtonIcon"
+                   Disabled="@(!CanSubmit)"
+                       IconSize="Size.Small"
+                           Variant="Variant.Filled"
+                           OnClick="Submit">
+                    @ButtonText
+                </MudButton>
+        </DialogActions>
+    </MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance? MudDialog { get; set; }
+
+    private bool CanSubmit => Items.Any(i => i.IsSelected);
+
+    [Parameter]
+    public DialogOptions? DialogOptions { get; set; } = new DialogOptions { BackdropClick = false, CloseOnEscapeKey = true, CloseButton = true };
+
+    [Parameter]
+    public string? Title { get; set; }
+
+    [Parameter, EditorRequired]
+    public List<Tasque> Items { get; set; } = new();
+
+    [Parameter, EditorRequired]
+    public Journal Journal { get; set; } = new();
+
+    [Parameter, EditorRequired]
+    public DateTime Date { get; set; }
+
+    [Parameter]
+    public string ButtonText { get; set; } = "OK";
+
+    [Parameter]
+    public string ButtonIcon { get; set; } = "fa-solid fa-check";
+
+    [Parameter]
+    public bool ButtonDisable { get; set; }
+
+    [Parameter]
+    public string CancelButtonIcon { get; set; } = "fa-solid fa-close";
+
+    [Parameter]
+    public Color Color { get; set; } = Color.Success;
+
+    [Parameter]
+    public EventCallback<object> OnConfirm { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> OnClose { get; set; }
+
+    private async Task Submit() => MudDialog.Close(DialogResult.Ok(Items));
+
+    private async Task Cancel() => MudDialog.Cancel();
+
+    private async Task OpenEditTaskDialogAsync(Tasque ClickedTask)
+    {
+        var parameters = new DialogParameters<EditTaskDialog> {
+            { x => x.SelectedDay, Date },
+            { x => x.SelectedTask, ClickedTask },
+            { x => x.Journal, Journal },
+            { x => x.Categories, Journal.Categories }
+        };
+
+        var options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            CloseButton = true,
+            BackdropClick = false,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true
+        };
+
+        var TaskDialog = await DialogService.ShowAsync<EditTaskDialog>("Edit Task", parameters, options);
+        var TaskResults = await TaskDialog.Result;
+
+        if (TaskResults != null && !TaskResults.Canceled)
+        {
+            //await GetData();
+        }
+    }
+
+    private async Task DeleteTaskLocal(Tasque task)
+    {
+        if (await DialogService.ConfirmAsync("Confirm Task Deletion", $"Are you sure you want to delete the task \"{task.Name}\"?", "Delete",
+        confirmColor: Color.Error))
+        {
+            Items.Remove(task);
+
+            Snackbar.Add($"Task {task.Name} deleted.", Severity.Error);
+
+            StateHasChanged();
+        }
+    }
+}

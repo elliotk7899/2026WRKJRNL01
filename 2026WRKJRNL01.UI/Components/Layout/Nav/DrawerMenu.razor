@@ -1,0 +1,63 @@
+﻿@inherits AppComponentBase
+
+<MudPaper Class="mt-12">
+    <MudNavMenu>
+        @foreach (var link in Links)
+        {
+            if (!link.Hidden)
+            {
+                <MudNavLink Href="@link.Href" Icon="@link.Icon" Class="icon-menu-size sdpbc-nav-item" IconColor="@Color.Primary" Match="NavLinkMatch.All" Disabled="@link.Disabled" title="@link.Title">
+                    @link.Label
+                </MudNavLink>
+            }
+        }
+    </MudNavMenu>
+</MudPaper>
+
+<style>
+    .sdpbc-nav-item a {
+        padding-left: 6px !important;
+    }
+</style>
+
+@code {
+    private bool ShowIcons = true;
+
+    private List<Link> Links = new List<Link>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        await AppState.Initialization;
+
+        AppState.OnChange += () => BuildMenu();
+
+        BuildMenu();
+    }
+
+    private void BuildMenu()
+    {
+        //if the user has no access
+        if (AppState.NoAccess)
+        {
+            return;
+        }
+
+        Links = new List<Link>
+       {
+           new Link{ Label = "Home", Icon = "fa-solid fa-home", Href = "./Home", Title = "Home Page" },
+           new Link{ Label = "Admin", Icon = "fa-solid fa-book-journal-whills", Href = "./Admin", Title = "Admin Page", Hidden = !AppState.IsAdmin },
+           new Link{ Label = "Sandbox", Icon = "fa-solid fa-shovel", Href = "./Sandbox", Title = "Dev Sandbox", Hidden = !DevTools.IsDev() },
+           new Link{ Label = "Widgets", Icon = "fa-solid fa-screwdriver-wrench", Href = "./Widgets", Title="Widgets", Hidden = !DevTools.IsDev() },
+           new Link{ Label = "User Management", Icon = "fa-solid fa-users", Href = "./Users", Title="User Management", Hidden = !AppState.IsAdmin },
+       };
+
+        //order alphabetically
+        //Links = Links.OrderBy(l => l.Label).ToList();
+
+        Links.ForEach(l => l.Icon = ShowIcons ? l.Icon : string.Empty);
+
+        StateHasChanged();
+    }
+}

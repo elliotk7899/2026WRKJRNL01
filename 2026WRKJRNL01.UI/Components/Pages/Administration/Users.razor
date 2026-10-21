@@ -1,0 +1,35 @@
+﻿@inherits AuthorizedComponentBase
+@page "/users"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using _2026WRKJRNL01.UI.Components.Settings
+@using WRKJRNL01.Data
+@using SDPBC.Authentication.BlazorUI
+@inject AppState AppState
+
+<PageTitle>@Title</PageTitle>
+
+<AuthorizeView Roles="Admin,SuperAdmin">
+
+    <NotAuthorized>
+        <label class="alert alert-danger">You are not authorized to view this page.</label>
+    </NotAuthorized>
+    
+    
+    <Authorized>
+        <MudAlert Severity="Severity.Info" Class="ma-2">
+            User management is unavailable in the local (offline) build.
+            This feature depends on the corporate identity provider.
+        </MudAlert>
+    </Authorized>
+
+</AuthorizeView>
+@code {
+    private string Title { get; set; } = "User Management";
+
+    protected override void OnInitialized()
+    {
+        AppState.OnChange += StateHasChanged;
+        AppState.PageTitle = Title;
+    }
+}

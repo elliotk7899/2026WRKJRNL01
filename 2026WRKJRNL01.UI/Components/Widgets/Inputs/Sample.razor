@@ -1,0 +1,69 @@
+﻿@page "/samples/inputs"
+
+<h3>Inputs Sample</h3>
+
+<MudStack>
+    <MudItem>
+        <MudCard>
+             <MudCardContent>
+                Phone: @PhoneText
+             </MudCardContent>
+        </MudCard>
+    </MudItem>
+
+    <MudItem>
+        <MudCard>
+             <MudCardContent>
+            Social: @SocialText
+             </MudCardContent>
+        </MudCard>
+    </MudItem>
+
+    <MudItem>
+        <MudCard>
+            <MudCardContent>
+                Hex: @HexText
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+
+    <MudCard>
+         <MudCardContent>
+            <PhoneInput TextChanged="OnTextChangedPhone" />
+        </MudCardContent>
+    </MudCard>
+
+    <MudCard>
+         <MudCardContent>
+            <SocialInput TextChanged="OnTextChangedSS" />
+        </MudCardContent>
+    </MudCard>
+
+    <MudCard>
+        <MudCardContent>
+            <HexInput TextChanged="OnTextChangedHex" />
+        </MudCardContent>         
+    </MudCard>
+</MudStack>
+
+
+@code {
+    private string PhoneText = "";
+    private string SocialText = "";
+    private string HexText = "";
+
+    private void OnTextChangedPhone(string newValue)
+    {
+        PhoneText = newValue;
+    }
+
+    private void OnTextChangedSS(string newValue)
+    {
+        SocialText = newValue;
+    }
+
+    private void OnTextChangedHex(string newValue)
+    {
+        HexText = newValue;
+    }
+}

@@ -1,0 +1,890 @@
+﻿@inherits AppComponentBase
+
+@page "/"
+@page "/Home"
+@implements IDisposable
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject IBrowserViewportService BrowserViewportService
+@inject LayoutState LayoutState
+
+@using System.Text.Json
+@using Classes
+@using Google.Apis.Calendar.v3.Data
+@using Microsoft.AspNetCore.Components.Authorization
+@using SDPBC.Authentication.BlazorUI
+@using WRKJRNL01.Data
+@using WRKJRNL01.Data.Models
+@using WRKJRNL01.Data.Repository
+@using WRKJRNL01.Data.Services
+@using WRKJRNL01.UI.Components.Settings
+@using _2026WRKJRNL01.UI.Components.Layout
+@using _2026WRKJRNL01.UI.Components.Tasks
+
+<PageTitle>@AppState.PageTitle</PageTitle>
+
+<AuthorizeView Roles="Employee,Admin,SuperAdmin">
+    <NotAuthorized>
+		<MudAlert Severity="Severity.Error">You are not authorized to view this page.</MudAlert>
+    </NotAuthorized>
+
+    <Authorized>
+        @if (!IsLoaded || !GoogleLoaded)
+        {
+            <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+        } else {
+            <MudAlert Class="mb-4" Variant="Variant.Filled" Icon="fa-solid fa-location-dot" style="background-color: var(--mud-palette-primary);">
+
+                <MudStack Row AlignItems="AlignItems.Baseline">
+
+                    <MudText Typo="Typo.body1">
+                        Work Location:
+                    </MudText>
+
+                    <MudPaper>
+                        <MudSelect T="WorkLocation" 
+                                   @key="Journal.WorkLocation"
+                            @bind-Value="Journal.WorkLocation"
+                            Variant="Variant.Outlined" 
+                            Class="slim-input">
+                            <MudSelectItem Value="@WorkLocation.None">Select Location</MudSelectItem>
+                            <MudSelectItem Value="@WorkLocation.Office">Office</MudSelectItem>
+                            <MudSelectItem Value="@WorkLocation.Remote">Remote</MudSelectItem>
+                        </MudSelect>
+                    </MudPaper>
+
+                </MudStack>
+        </MudAlert>
+        }
+
+        <MudGrid Spacing="4">
+            <!--Calendar-->
+                <MudItem xl="3" lg="4" md="4" sm="12" xs="12">
+
+                    <MudCard Class="pa-4">
+
+                        <MudStack Row AlignItems="AlignItems.Center" Class="mb-2">
+                            <MudText Typo="Typo.h6">Select a Date</MudText>
+                        <MudSpacer />
+                            <MudButton Variant="Variant.Filled" Size="Size.Small" Color="Color.Primary" OnClick="GotoToday">
+                                 <MudText Typo="Typo.subtitle2" Style="font-size:10px;">
+                                    Select Today
+                                </MudText>
+                            </MudButton>
+                        </MudStack>
+
+                    <MudDatePicker 
+                                        Class="center-cal mb-4"
+                                        Label="Date"
+                                        
+                                       @bind-Date="Day"
+                                       @bind-Date:after="() => GetData(true)"
+                                       PickerMonth="SelectedMonth"
+                                       PickerMonthChanged="OnMonthSelected"
+                                       PickerVariant="PickerVariant.Static"
+                                       MaxDate="DateTime.Today"
+                                       FirstDayOfWeek="DayOfWeek.Monday"
+                                       AdditionalDateClassesFunc="GetDateClass"
+                                       Disabled="@(!IsLoaded || !GoogleLoaded)"/>
+
+                    <MudDivider Class="mb-4" />
+
+                    
+                    @if(!IsLoaded || !GoogleLoaded)
+                    {
+                        <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+                    }
+                    else
+                    {
+                            <MudButtonGroup Color="Color.Primary" Size="Size.Small" Variant="Variant.Filled" OverrideStyles="false" FullWidth>
+                               
+                                @if (!GoogleConnected)
+                                {
+
+                                <MudTooltip Placement="Placement.Top" Text="Sync your District Google Calendar to import events." Duration="1000">
+                                    <MudButton Color="Color.Success" Variant="Variant.Outlined" Href="GoogleAuth/Connect">
+                                        <MudText Typo="Typo.subtitle2" Style="font-size:10px;">
+                                            Connect Calendar
+                                        </MudText>
+                                    </MudButton>
+                                </MudTooltip>
+
+                                } 
+                                else
+                                {
+                                    <MudTooltip Placement="Placement.Top" Text="Desync your District Google Calendar." Duration="1000">
+                                <MudButton Color="Color.Success" Variant="Variant.Filled" OnClick="() => DisconnectCalendar(AppState.EmployeeEmail)">
+                                        <MudText Typo="Typo.subtitle2" Style="font-size:10px;">
+                                            Calendar Connected
+                                        </MudText>
+                                    </MudButton>
+                                </MudTooltip>
+                                }
+
+                            <MudTooltip Placement="Placement.Top" Text=@(GoogleConnected ? "Import events from your District Google Calendar." : "Requires calendar synchronization to use.") Duration="1000">
+                                <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="async () => await CheckGoogleEvents(true)" Disabled="@(!GoogleConnected)">
+                                        <MudText Typo="Typo.subtitle2" Style="font-size:10px;">
+                                            Import Events
+                                        </MudText>
+                                    </MudButton>
+                                </MudTooltip>
+
+                            <MudTooltip Placement="Placement.Top" Text=@(GoogleConnected ? "Automatically import Google Calendar Events on page load." : "Requires calendar synchronization to use.") Duration="1000">
+                                <MudButton 
+                                    Color="Color.Success"
+                                    Variant="@(AutoImportEvents ? Variant.Filled : Variant.Outlined)"
+                                    Disabled="@(!GoogleConnected)"
+                                           OnClick="async () => await OnImportsClick(!AutoImportEvents)">
+
+                                    <MudText Typo="Typo.subtitle2" Style="font-size:10px;">
+                                        @(AutoImportEvents ? "Auto Import On" : "Auto Import Off")
+                                    </MudText>
+
+                                </MudButton>
+                            </MudTooltip>
+
+                            </MudButtonGroup>
+                    }
+                    
+
+                    </MudCard>
+
+                </MudItem>
+            <!--Calendar-->
+
+            <!--Tasks-->
+                <MudItem xl="7" lg="6" md="6" sm="12" xs="12">
+
+                @if (!IsLoaded && !GoogleLoaded)
+                {
+                    <MudCard Class="pa-4">
+                        <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+                    </MudCard>
+                }
+                else
+                {
+                    <TaskList RowCount="5"
+                    Items="TasksInRange"
+                    OnPageChanged="(tasksFromList) => UpdatePie(tasksFromList)"
+                    OnRowsPageChanged="(tasksFromList) => UpdatePie(tasksFromList)"
+                    OnNewTaskClicked="OpenTaskDialogAsync"
+                    OnNewCatClicked="OpenCategoryDialogAsync"
+                    OnEditTask="OpenEditTaskDialogAsync"
+                    OnDeleteTask="DeleteTaskAsync" 
+                    OnPermDeleteTask="PermDeleteTaskAsync" 
+                    OnRestoreTask="RestoreTaskAsync"
+                    OnViewChanged="OnViewChanged" 
+                    />
+                }
+            </MudItem>
+            <!--Tasks-->
+
+            <!--Stats-->
+            <MudItem xl="2" lg="2" md="2" sm="12" xs="12">
+
+                    <MudCard Class="pa-4">
+
+                    @if (!IsLoaded && !GoogleLoaded)
+                    {
+                        <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.h6">Statistics</MudText>
+                        @if (TasksInRange == null || TasksInRange.Count == 0)
+                        {
+                            //nothing to display
+                            <MudAlert Variant="Variant.Filled" Severity="Severity.Warning">No tasks found.</MudAlert>
+                        }
+                        else
+                        {
+                            <MudChart 
+                            ChartType="ChartType.Pie"
+                            ChartSeries="@piedata.AsChartDataSet()"
+                            ChartLabels="@pielabels"
+                            ChartOptions="PieOptions"
+                            Style="display: block; margin-right: auto; margin-left: auto" />
+                        }
+                    }
+                    </MudCard>
+
+                </MudItem>
+            <!--Stats-->
+            </MudGrid>
+        
+    </Authorized>
+</AuthorizeView>
+
+<style>
+    .center-cal .mud-picker-content {
+    flex-direction: unset !important;
+}
+
+    .center-cal .mud-button-year {
+        display: none !important;
+    }
+
+    .center-cal .mud-picker-datepicker-toolbar {
+        align-items: center;
+    }
+
+    .center-cal .mud-picker-toolbar {
+        height: auto;
+    }
+
+    .mud-alert-icon {
+        align-self: center;
+    }
+
+    .has-journal-entry {
+        box-shadow: inset 0 0 0 2px var(--mud-palette-tertiary);
+        border-radius: 50% !important;
+    }
+
+    .center-cal .mud-button-date {
+        font-size: 1.5rem;
+    }
+
+    .custom-checkbox .mud-icon-button {
+       color: var(--mud-palette-white) !important;
+       
+    }
+
+    .mud-tooltip-root {
+        display: inline-flex !important;
+    }
+</style>
+
+@code {
+    private string Title { get; set; } = "Home";
+    private HashSet<DateTime> JournalDates = new HashSet<DateTime>();
+    private DateTime SelectedMonth = DateTime.Now;
+    private string GetDateClass(DateTime date)
+    {
+        return JournalDates.Contains(date.Date)
+        ? "has-journal-entry"
+            : string.Empty;
+    }
+
+    [CascadingParameter]
+    private MainLayout? Layout { get; set; }
+
+    //table info
+    private List<Tasque> TasksInRange = new();
+    private List<Tasque> TasksOnPage = new();
+    private Tasque? SelectedTask;
+    private bool Selected = false;
+    private int SelectedRow = -1;
+    private string searchString1 = "";
+    private bool IsLoaded;
+
+    private double[] piedata = Array.Empty<double>();
+    private string[] pielabels = Array.Empty<string>();
+    private string[] piecolors = Array.Empty<string>();
+    private ChartOptions PieOptions = new ChartOptions();
+
+    [Inject] protected TaskRepo TaskRepo { get; set; } = default!;
+    [Inject] protected TaskService TaskService { get; set; } = default!;
+    [Inject] protected GoogleCalendarService GoogleCalendarService { get; set; } = default!;
+    [Inject] protected GoogleConnectRepo GoogleConnectRepo { get; set; } = default!;
+
+    private bool GoogleConnected;
+    private bool GoogleLoaded;
+    private bool AutoImportEvents;
+    private bool IncludeDeletedEvents;
+    private string employeeToQuery;
+    private string employeeDept;
+
+    private bool AutoImportDisable;
+    private Dictionary<string, bool> CalendarSettings = new();
+    private DateTime? Day = DateTime.Today;
+
+    //this is the key
+    private Journal Journal = new Journal();
+
+    protected override async Task OnInitializedAsync()
+    {
+        //loads the base OnInitializedAsync method first, then runs the rest of this method
+        await base.OnInitializedAsync();
+
+        await AppState.Initialization;
+
+        var breakpoint = await BrowserViewportService.GetCurrentBreakpointAsync();
+
+        if (breakpoint <= Breakpoint.Md)
+        {
+            LayoutState.SetDrawer(false);
+        }
+
+        //get user info
+        employeeToQuery = AppState.EmployeeId;
+        employeeDept = AppState.DeptId;
+
+        //get google connection status for the logged in user
+        GoogleConnected = await GoogleCalendarService.IsConnectedAsync(AppState.EmployeeEmail);
+
+        //get calendar settings
+        CalendarSettings = await GoogleCalendarService.GetCalendarSettings(AppState.EmployeeEmail);
+        AutoImportEvents = CalendarSettings.GetValueOrDefault("AutoImportEvents");
+
+        //get dater
+        await GetData();
+    }
+
+    protected override void OnInitialized()
+    {
+        AppState.OnChange += StateHasChanged;
+        AppState.PageTitle = Title;
+    }
+
+    private async Task OnImportsClick(bool value)
+    {
+        //checkbox is checked
+        if (value)
+        {
+            bool? result = await DialogService.ShowMessageBoxAsync(
+                new MessageBoxOptions
+                {
+                    Title = "Automatically Import Events",
+                    Message = "Enabling this setting will automatically pull in events from your Google Calendar on page load. If additional events are added, click the import button to pull them.",
+                    YesText = "Enable",
+                    CancelText = "Cancel"
+                },
+                new DialogOptions { CloseButton = true });
+
+            //determine if the user accepts the setting or not
+            AutoImportEvents = result ?? false;
+        } 
+        else
+        {
+            //checkbox unchecked
+            AutoImportEvents = false;
+        }
+
+        await ToggleImportEvents(AutoImportEvents);
+
+        StateHasChanged();
+    }
+
+    private async Task ToggleImportEvents(bool value)
+    {
+        await GoogleConnectRepo.SetAutoImportEvents(AppState.EmployeeEmail, value);
+
+        Snackbar.Add(
+            $"Calendar events {(value ? "will be" : "will not be")} automatically imported.",
+            Severity.Info);
+    }
+
+    private async Task OnMonthSelected(DateTime? month)
+    {
+        //month is invalid or in the future
+        if (!month.HasValue || month.Value.Month > DateTime.Now.Month)
+            return;
+
+        SelectedMonth = month.Value;
+
+        JournalDates = (await TaskRepo.GetTaskDates(AppState.EmployeeId, month.Value.Month, false)).ToHashSet();
+    }
+
+    private void GotoToday()
+    {
+        Day = DateTime.Now;
+    }
+
+    private async Task<bool> GetGoogleEvents(string email, DateTime date, List<Tasque> collection)
+    {
+        if (!GoogleConnected) return true;
+
+        var events = await GoogleCalendarService.GetUpcomingEventsAsync(email, date);
+
+        //find work Location for this date if exists
+        var location = events.FirstOrDefault(e => e != null &&
+            (e.EventType == "workLocation" &&
+            e.Start?.DateTimeDateTimeOffset?.Date != DateTime.Today) ||
+            !string.IsNullOrWhiteSpace(e.Start?.Date) && !string.IsNullOrWhiteSpace(e.End?.Date)
+        );
+
+        //dertmine what the location is
+        if (location != null)
+        {
+
+            if (Enum.TryParse<WorkLocation>(location.Summary, out var status))
+            {
+                Journal.WorkLocation = status;
+            } else
+            {
+                Journal.WorkLocation = WorkLocation.None;
+            }
+
+            //remove it from the events
+            events.Remove(location);
+        }
+
+        //TODO convert these into a list of Tasque objects and add them to the Journal for the selected day
+        foreach (var c in events)
+        {
+            // var json = JsonSerializer.Serialize(c);
+
+            // Console.WriteLine(json);
+            // Console.WriteLine();
+
+            //if the event is null or its an all day event (start and end are not null and have a date) then skip it
+            if (c == null || !string.IsNullOrWhiteSpace(c.Start?.Date) && !string.IsNullOrWhiteSpace(c.End?.Date))
+                continue;
+
+            DateTime? eventStart = c.Start?.DateTimeDateTimeOffset?.DateTime 
+            ?? (!string.IsNullOrWhiteSpace(c.Start?.Date)
+             ? DateTime.Parse(c.Start.Date)
+             : null);
+
+            //skip if the event is already in the list or if the event start date is not the same as the selected date
+            if (TasksInRange.Any(t => t.EventId == c.Id) || !eventStart.HasValue || eventStart.Value.Date != date.Date)
+            {
+                continue;
+            }
+
+            DateTime eventEnd = c.End?.DateTimeDateTimeOffset?.DateTime ??
+                (!string.IsNullOrWhiteSpace(c.End?.Date)
+                    ? DateTime.Parse(c.End.Date)
+                    : eventStart.Value.AddHours(1));
+
+            //default, workingLocation, focusTime
+            DateTimeOffset? dateTimeDateTimeOffset = eventStart ?? DateTime.MinValue;
+
+            //get category for event
+            var category = GetCategoryFromEvent(c);
+
+            //if the category is null, then try to get the default category for meetings
+            if (category == null)
+            {
+                category = Journal.Categories.FirstOrDefault(c => c.Name == "Meeting"); 
+            }
+            //if the category is still null, then try to get the default category for events
+            if (category == null)
+            {
+                Snackbar.Add("Could not locate default category object!", Severity.Error);
+                return false;
+            }
+
+            //create a new Tasque object for the event
+            var task = new Tasque
+            {
+                Name = $"{c?.Summary}" ?? "Untitled Event",
+                ICalUID = c?.ICalUID,
+                EventId = c?.Id,
+                HtmlLink = c?.HtmlLink,
+                EmplId = AppState.EmployeeId,
+                Description = c?.Description ?? string.Empty,
+                Date = dateTimeDateTimeOffset?.Date ?? Day ?? DateTime.Today,
+                StartTime = TimeOnly.FromDateTime(eventStart.Value),
+                EndTime = TimeOnly.FromDateTime(eventEnd),
+                CatId = category.PkId,
+                TaskCategory = category,
+                WorkLocation = Journal.WorkLocation,
+                Lcts = DateTime.Now
+            };
+
+            //calc the time because math sucks
+            TimeSpan duration = eventEnd - eventStart.Value;
+            int hours = duration.Hours;          
+            int minutes = duration.Minutes;      
+
+            double totalHours = duration.TotalHours;     
+            double totalMinutes = duration.TotalMinutes;
+
+            task.Hours = (decimal)totalHours;
+            task.GivenMinutes = (decimal)totalMinutes;
+
+            //add the task to the collection
+            collection.Add(task);
+        }
+
+        return true;
+    }
+
+    private Category? GetCategoryFromEvent(Event calendarEvent)
+    {
+        return calendarEvent.EventType switch
+        {
+            "focusTime" => Journal.Categories
+                .FirstOrDefault(c => c.Name == "Event"),
+
+            "outOfOffice" => Journal.Categories
+                .FirstOrDefault(c => c.Name == "Out of Office"),
+
+            "workingLocation" => Journal.Categories
+                .FirstOrDefault(c => c.Name == "Event"),
+
+            "default" => IsMeeting(calendarEvent)
+                ? Journal.Categories.FirstOrDefault(c => c.Name == "Meeting")
+                : Journal.Categories.FirstOrDefault(c => c.Name == "Event"),
+
+            _ => Journal.Categories
+                .FirstOrDefault(c => c.Name == "Event")
+        };
+    }
+
+    private static bool IsMeeting(Event calendarEvent)
+    {
+        return calendarEvent.Attendees?.Any() == true;
+    }
+
+    private async Task GetData(bool fromDateSelection = false)
+    {
+        IsLoaded = false;
+
+        //reset pulling from calendar if a new date is picked
+        if (fromDateSelection)
+            GoogleLoaded = false;
+
+        //get categories for selected user or logged in user
+        Journal.Categories = await TaskService.GetAllCategoriesAsync(employeeDept, true);
+
+        //get dates of tasks for this month for the selected employee to display on calendar
+        JournalDates = (await TaskRepo.GetTaskDates(employeeToQuery, DateTime.Now.Month, IncludeDeletedEvents)).ToHashSet();
+
+        //pull tasks from dbase for selected date
+        TasksInRange = await GetTasks(employeeToQuery, Day ?? DateTime.Today, null, IncludeDeletedEvents);
+
+        //pull tasks from google
+        await CheckGoogleEvents(AutoImportEvents);
+
+        //sort chart
+        TasksInRange = TasksInRange.OrderBy(t => t.Lcts).ToList();
+
+        //update piechart based on tasks in range
+        UpdatePie(TasksInRange);
+
+        IsLoaded = true;
+
+        StateHasChanged();
+    }
+
+    private async Task CheckGoogleEvents(bool forceReload)
+    {
+        if (GoogleConnected && (!GoogleLoaded || forceReload))
+        {
+            GoogleLoaded = false;
+
+            if (forceReload)
+            {
+                //get, import and save google events
+                var selectedEvents = await ProcessGoogleEvents(Day ?? DateTime.Today, forceReload);
+
+                if (selectedEvents.Any())
+                {
+                    TasksInRange.AddRange(selectedEvents);
+                }
+                else
+                {
+                    Snackbar.Add($"No calendar events were imported.");
+                }
+            }
+        }
+
+        GoogleLoaded = true;
+    }
+
+    private async Task<List<Tasque>> SaveImportedEvents(List<Tasque> taskList)
+    {
+        var results = await TaskRepo.Upsert(taskList);
+
+        return results.ToList();
+    }
+
+    //get the tasks for the selected employee and date range
+    public async Task<List<Tasque>> GetTasks(string empId, DateTime start, DateTime? end = null, bool includeDeleted = false)
+    {
+        var results = (!end.HasValue ?
+         await TaskRepo.GetAllTasksAsync(empId, start, includeDeleted) :
+         await TaskRepo.GetAllTasksAsync(empId, start, end.Value, includeDeleted));
+
+        return results;
+    }
+
+    public async Task<List<Tasque>> GetDeletedTasks(string empId, DateTime start, DateTime? end = null)
+    {
+        var results = (!end.HasValue ?
+         await TaskRepo.GetDeletedTasksAsync(empId, start) :
+         await TaskRepo.GetDeletedTasksAsync(empId, start, end.Value));
+
+        return results;
+    }
+
+    public async Task<List<Tasque>> ProcessGoogleEvents(DateTime day, bool forceRefresh)
+    {
+        //skip getting events if not forced and not auto
+        if (!AutoImportEvents && !forceRefresh)
+            return new List<Tasque>();
+
+        if (GoogleConnected)
+        {
+            //temp list of google events
+            var googleEvents = new List<Tasque>();
+
+            //get the google events
+            GoogleLoaded = await GetGoogleEvents(AppState.EmployeeEmail, day, googleEvents);
+
+            //no events to import
+            if (!googleEvents.Any())
+                return new List<Tasque>();
+
+            //get the selected events (if auto, no prompt)
+            var selectedEvents = AutoImportEvents ?
+            googleEvents :
+            await OpenImportDialogAsync(googleEvents);
+
+            //no events? GTFO
+            if (!selectedEvents.Any())
+                return new List<Tasque>();
+
+            //immediately save these events
+            var results = await SaveImportedEvents(selectedEvents);
+
+            return results;
+        }
+
+        return new List<Tasque>();
+    }
+
+    private void UpdatePie(List<Tasque> tasks) {
+        //Journal.Categories = tasks.Select(t => t.TaskCategory).ToList();
+
+        pielabels = new string[Journal.Categories.Count];
+        piedata = new double[Journal.Categories.Count];
+        piecolors = new string[Journal.Categories.Count];
+
+        for (int i = 0; i < Journal.Categories.Count; i++){
+            piedata[i] = Journal.HoursInCategoryInRange(Journal.Categories[i], tasks);
+            pielabels[i] = $"{Journal.Categories[i].Name} ({piedata[i]} Hours)";
+            piecolors[i] = Journal.Categories[i].Color;
+        }
+
+        PieOptions.ChartPalette = piecolors;
+    }
+
+    private bool FilterFunc1(Tasque element) => FilterFunc(element, searchString1);
+
+    private bool FilterFunc(Tasque element, string searchString)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+        if (element.Name.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (element.TaskCategory.Name.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if ($"{Journal?.FindJournalDay(Day)?.Tasks.ToList().IndexOf(element) + 1} {element.Hours}".Contains(searchString))
+            return true;
+        return false;
+    }
+
+    private async Task OpenTaskDialogAsync()
+    {
+        var parameters = new DialogParameters<TaskDialog> { 
+            { x => x.SelectedDay, Day },
+            { x => x.Journal, Journal},
+            { x => x.Categories, Journal.Categories }
+        };
+
+        var options = new DialogOptions
+        {
+             CloseOnEscapeKey = true,
+             CloseButton = true,
+             BackdropClick = false,
+             MaxWidth = MaxWidth.Small,
+             FullWidth = true
+        };
+
+        var TaskDialog = await DialogService.ShowAsync<TaskDialog>("New Task", parameters, options);
+
+        var TaskResults = await TaskDialog.Result;
+
+        //get the task after we added it
+        if (TaskResults != null && !TaskResults.Canceled)
+        {
+            await GetData();
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task OpenEditTaskDialogAsync(Tasque ClickedTask)
+    {
+        var parameters = new DialogParameters<EditTaskDialog> { 
+            { x => x.SelectedDay, Day }, 
+            { x => x.SelectedTask, ClickedTask },
+            { x => x.Journal, Journal },
+            { x => x.Categories, Journal.Categories }
+        };
+
+        var options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            CloseButton = true,
+            BackdropClick = false,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true
+        };
+
+        var TaskDialog = await DialogService.ShowAsync<EditTaskDialog>("Edit Task", parameters, options);
+        var TaskResults = await TaskDialog.Result;
+
+        if (TaskResults != null && !TaskResults.Canceled)
+        {
+            await GetData();
+        }
+    }
+
+    private async Task OpenCategoryDialogAsync()
+    {
+        var options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            CloseButton = true,
+            BackdropClick = false,
+            MaxWidth = MaxWidth.ExtraSmall,
+            FullWidth = true
+        };
+
+        var dialog = await DialogService.ShowAsync<CategoryDialog>("Simple Dialog", options);
+
+        var result = await dialog.Result;
+
+        //if its NOT cancelled
+        if (result != null && !result.Canceled)
+        {
+            Journal.Categories = await TaskService.GetAllCategoriesAsync(AppState.DeptId, AppState.EmployeeId);
+            UpdatePie(TasksInRange);
+            StateHasChanged();
+        }
+    }
+
+    private async Task<List<Tasque>> OpenImportDialogAsync(IEnumerable<Tasque> taskList)
+    {
+        var options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            CloseButton = true,
+            BackdropClick = false,
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true
+        };
+
+        var parameters = new DialogParameters
+        {
+            { "ButtonText", "Import Events" },
+            { "Title", "Import Calendar Events" },
+            { "Items", taskList },
+        };
+
+        var dialog = await DialogService.ShowAsync<ImportDialog>(parameters, options);
+
+        var result = await dialog.Result;
+
+        // if it's NOT cancelled and data is the expected type
+        if (result is { Canceled: false } && result.Data is List<Tasque> importedTasks)
+        {
+            //get only imported tasks
+            var selectedTasks = importedTasks.Where(t => t.IsSelected).ToList();
+
+            return selectedTasks;
+        }
+
+        return new List<Tasque>();
+    }
+
+    private async Task DeleteTaskAsync(Tasque task)
+    {
+        if (await DialogService.ConfirmAsync("Confirm Task Deletion",$"Are you sure you want to delete the task \"{task.Name}\"? It can be restored by changing the View dropdown to Deleted Tasks.","Delete",
+        confirmColor: Color.Error))
+        {
+            TasksInRange.Remove(task);
+            TasksOnPage.Remove(task);
+            TaskRepo.Remove(task, false);
+
+            //await GetData();
+
+            Snackbar.Add($"Task {task.Name} deleted.", Severity.Error);
+
+            //await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task PermDeleteTaskAsync(Tasque task)
+    {
+        if (await DialogService.ConfirmAsync("Confirm Task Deletion", $"Are you sure you want to permanetely delete the task \"{task.Name}\"?", "Delete",
+        confirmColor: Color.Error))
+        {
+            TasksInRange.Remove(task);
+            TasksOnPage.Remove(task);
+            TaskRepo.Remove(task, true);
+
+            //await GetData();
+
+            Snackbar.Add($"Task {task.Name} was deleted.", Severity.Error);
+
+            //await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task RestoreTaskAsync(Tasque task)
+    {
+            TasksInRange.Remove(task);
+            TasksOnPage.Remove(task);
+             await TaskRepo.Restore(task);
+            //await GetData();
+
+            Snackbar.Add($"Task {task.Name} was restored.", Severity.Success);
+
+            //await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task DisconnectCalendar(string email)
+    {
+        if (await DialogService.ConfirmAsync("Disconnect Google Calendar",
+        $"Are you sure you want to disconnect your Google Calendar sync? You will not be able to import events from your Google Calendar.",
+        "Disconnect",
+        confirmColor: Color.Error))
+        {
+
+            await GoogleConnectRepo.DisconnectAsync(email);
+
+            Snackbar.Add($"Google Calendar sync disconnected.", Severity.Error);
+
+            GoogleConnected = false;
+
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnViewChanged(int selectedView)
+    {
+        Console.WriteLine($"OnViewChanged {selectedView}");
+
+        if (selectedView == 1)
+        {
+            //
+            IncludeDeletedEvents = false;
+            await GetData();
+        }
+        else
+        {
+            IsLoaded = false;
+
+            TasksInRange.Clear();
+
+            IncludeDeletedEvents = true;
+
+            TasksInRange = await GetDeletedTasks(employeeToQuery, Day ?? DateTime.Today, null);
+            
+            //update piechart based on tasks in range
+            UpdatePie(TasksInRange);
+
+            IsLoaded = true;
+
+            StateHasChanged();
+        }
+    }
+
+    public void Dispose() => AppState.OnChange -= StateHasChanged;
+}

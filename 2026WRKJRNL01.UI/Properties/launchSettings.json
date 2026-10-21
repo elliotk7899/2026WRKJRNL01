@@ -1,0 +1,33 @@
+{
+  "profiles": {
+    "https-headless": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Debug"
+      },
+      "dotnetRunMessages": true,
+      "applicationUrl": "https://localhost:44300",
+      "launchBrowser": false,
+      "launchUrl": "https://localhost:44300"
+    },
+    "https-browser": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Debug"
+      },
+      "dotnetRunMessages": true,
+      "applicationUrl": "https://localhost:44300",
+      "launchBrowser": true,
+      "launchUrl": "https://localhost:44300"
+    }
+  },
+  "$schema": "http://json.schemastore.org/launchsettings.json",
+  "iisSettings": {
+    "windowsAuthentication": false,
+    "anonymousAuthentication": true,
+    "iisExpress": {
+      "applicationUrl": "http://localhost:7983",
+      "sslPort": 44373
+    }
+  }
+}

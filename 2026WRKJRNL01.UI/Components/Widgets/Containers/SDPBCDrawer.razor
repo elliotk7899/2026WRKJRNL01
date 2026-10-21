@@ -1,0 +1,119 @@
+﻿<MudDrawer @bind-Open="Open"
+           Anchor="@Anchor"
+           Class="gradient-bg"
+           Elevation="@Elevation"
+           Height="@Height"
+           Width="@Width"
+           Overlay="@Overlay"
+           OverlayAutoClose="@AutoClose"
+           Style="z-index: var(--mud-zindex-tooltip) !important;"
+           Variant="@Variant">
+
+        <MudDrawerHeader>
+       
+            <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" style="width: 100%;">
+                <MudStack Row>
+                    <MudIcon Class="mr-1 mt-1" Size="@TitleIconSize" Icon="@TitleIcon" />
+                    <MudText Typo="@TitleTypo"><b>@Title</b></MudText>
+                </MudStack>
+
+                <MudIconButton Icon="fa fa-close" Color="Color.Default" Size="Size.Small"
+                               OnClick="() => toggleDrawer(false)" />
+            </MudStack>
+        </MudDrawerHeader>
+
+    <MudPaper Class="pa-4" Elevation="0">
+       @ChildContent
+    </MudPaper>
+
+    <MudSpacer />
+
+    <MudPaper Class="pa-4" Elevation="2">
+        @ControlsContent
+    </MudPaper>
+</MudDrawer>
+
+<style>
+    .gradient-bg {
+        background: linear-gradient(180deg, var(--mud-palette-surface) 0%, var(--mud-palette-background-gray) 50%);
+    }
+
+    scroll-locked {
+        overflow: auto !important;
+    }
+
+    .scroll-locked-no-padding {
+        overflow: auto !important;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public bool Open { get; set; } = false;
+
+    private void HandleKeyDown(KeyboardEventArgs e) {
+        Console.WriteLine(e);
+        if (e.Key == "Escape") { Open = false; }
+    }
+
+    [Parameter, EditorRequired]
+    public string Title { get; set; }
+
+    [Parameter]
+    public string TitleIcon { get; set; } = "fa-solid fa-bolt-lightning";
+
+    [Parameter]
+    public Typo TitleTypo { get; set; } = Typo.h6;
+
+    [Parameter]
+    public Size TitleIconSize { get; set; } = Size.Medium;
+
+    [Parameter]
+    public DrawerVariant DrawerVariant { get; set; } = DrawerVariant.Temporary;
+
+    [Parameter]
+    public string Instructions { get; set; } = "These are some instructions for using the drawer.";
+
+    [Parameter]
+    public Severity InstructionsSeverity { get; set; } = Severity.Info;
+
+    [Parameter]
+    public EventCallback<bool?> ToggleDrawer { get; set; }
+
+    [Parameter]
+    public string Width { get; set; } = "33%";
+
+    [Parameter]
+    public string Height { get; set; } = "100%";
+
+    [Parameter]
+    public Anchor Anchor { get; set; } = Anchor.End;
+
+    [Parameter]
+    public bool AutoClose { get; set; } = false;
+
+    [Parameter]
+    public bool Overlay { get; set; } = true;
+
+    [Parameter]
+    public DrawerVariant Variant { get; set; } = DrawerVariant.Temporary;
+
+    [Parameter]
+    public int Elevation { get; set; } = 2;
+
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
+
+    [Parameter]
+    public RenderFragment ControlsContent { get; set; }
+
+    private async Task<bool> toggleDrawer(bool? state = null)
+    {
+        Open = state.HasValue ? state.Value : !Open;
+
+        await ToggleDrawer.InvokeAsync(state);
+
+        return Open;
+    }
+
+}

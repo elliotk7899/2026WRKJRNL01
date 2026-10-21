@@ -1,0 +1,35 @@
+﻿
+
+<MudDialog Style="min-width: 700px;">
+    <TitleContent>
+        Select a Date Range:
+    </TitleContent>
+    <DialogContent>
+        <MudItem xs="12">
+            <MudDateRangePicker @bind-DateRange="@NewDateRange"
+                                Editable="true"
+                                DateFormat="dddd, dd MMMM, yyyy"
+                                pickerVariant="(PickerVariant.Static)"
+                                TitleDateFormat=" MMMM dd"
+                                Margin="Margin.Dense"
+                                Variant="Variant.Filled"
+                                Label="Range"
+                                MaxDate="DateTime.Today" />
+        </MudItem>
+        
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton OnClick="Submit" Disabled="false" Variant="Variant.Filled" Color="Color.Info">Ok</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private DateRange NewDateRange = new DateRange(DateTime.Today.AddDays(-7), DateTime.Today);
+
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; }
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(NewDateRange));
+
+    private void Cancel() => MudDialog.Cancel();
+}

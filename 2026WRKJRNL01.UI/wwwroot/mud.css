@@ -1,0 +1,95 @@
+﻿h1, h2, h3, h4, h5, h6 {
+    font-family: "Roboto", system-ui !important;
+    font-weight: 700 !important;
+    font-style: normal !important;
+}
+
+h3 {
+    font-size: large;
+    margin-bottom: 1rem;
+}
+
+.mud-main-content {
+    min-height: 100vh;
+}
+
+.mud-nav-item.center .mud-nav-link-text  {
+    text-align: center;
+    margin-left: 0;
+}
+
+.mud-link:hover {
+    background-color: var(--mud-palette-action-default-hover);
+}
+
+.mud-link:active {
+    
+}
+
+.mud-typography {
+    font-family: "Roboto", system-ui;
+}
+
+.mud-appbar {
+    height: 3.5rem;
+}
+
+    .mud-appbar a {
+        font-size: var(--mud-typography-body1-size);
+        font-weight: bold;
+    }
+
+    .mud-appbar a.active {
+        color: var(--mud-palette-primary);
+        font-weight: bold !important;
+    }
+
+.mud-link {
+    font-family: "Archivo", sans-serif !important;
+}
+
+.mud-button-label {
+    font-family: "Archivo", sans-serif;
+}
+
+.mud-nav-link-text {
+    font-weight: bold !important;
+}
+
+.mud-appbar a:hover {
+    text-decoration: underline;
+}
+
+.mud-appbar .mud-nav-item {
+    max-width: 8rem;
+}
+
+.mud-list-item.mud-list-item-dense {
+    padding-top: 1px !important;
+    padding-bottom: 1px !important;
+}
+
+.mud-tab {
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.column-header {
+    font-weight: bold;
+}
+
+.mud-message-box__no-button {
+    color: var(--mud-palette-error-text) !important;
+    --mud-ripple-color: var(--mud-palette-error-text) !important;
+    background-color: var(--mud-palette-error) !important;
+}
+
+.mud-message-box__yes-button {
+    color: var(--mud-palette-success-text) !important;
+    --mud-ripple-color: var(--mud-palette-success-text) !important;
+    background-color: var(--mud-palette-success) !important;
+}
+
+.mud-main-content {
+    background-color: var(--mud-palette-background-gray);
+}

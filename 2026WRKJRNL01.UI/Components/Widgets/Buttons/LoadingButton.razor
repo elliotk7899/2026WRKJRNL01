@@ -1,0 +1,53 @@
+﻿<MudButton 
+    Disabled="@Processing"
+    OnClick="OnButtonPress"
+    Variant="@Variant"
+           Color="@Color"
+           StartIcon="@Icon"
+           IconColor="@IconColor">
+    @if (Processing && ShowProgress)
+    {
+        <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" Color="@ProgressColor" />
+        <MudText Class="ms-2">Processing</MudText>
+    }
+    else
+    {
+        <MudText>@Label</MudText>
+    }
+</MudButton>
+
+@code {
+    [Parameter, EditorRequired] public EventCallback<string> ButtonPressed { get; set; }
+
+    [Parameter]
+    public Variant Variant { get; set; } = Variant.Filled;
+
+    [Parameter]
+    public string Label { get; set; } = "Click Here";
+
+    [Parameter]
+    public string Icon { get; set; } = string.Empty;
+
+    [Parameter]
+    public Color IconColor { get; set; } = Color.Default;
+
+    [Parameter]
+    public Color Color { get; set; } = Color.Primary;
+
+    [Parameter]
+    public bool ShowProgress { get; set; } = true;
+
+    [Parameter]
+    public Color ProgressColor { get; set; } = Color.Primary;
+
+    private bool Processing { get; set; } = false;
+
+    private async Task OnButtonPress()
+    {
+        Processing = true;
+
+        await ButtonPressed.InvokeAsync();
+
+        Processing = false;
+    }
+}

@@ -1,0 +1,142 @@
+﻿@using SDPBC.Employees.ServiceConnector
+@typeparam TItem
+
+<MudStack AlignItems="AlignItems.Baseline">
+    <MudAutocomplete 
+        Class="sdpbc-autocomplete"
+        Clearable
+        Immediate
+         Variant="@Variant"
+         Adornment="Adornment.End"
+         AdornmentIcon="@Icon"
+         AdornmentColor="@Color"
+         FullWidth="@FullWidth"
+         T="TItem"
+         Label="@Label"
+         ShowProgressIndicator="@ShowProgress"
+         ProgressIndicatorColor="@ProgressColor"
+         Value="@SelectedObject"
+         OnKeyDown="ClearTxt"
+         ToStringFunc="(e) => ToStringFunction(e)"
+         ValueChanged="@HandleResultSelected"
+         SearchFunc="@SearchFunction">
+         
+       @*   <Item_2026WRKJRNL01 Context="e">
+            <SearchResult Result="e" 
+                ShowBadges="@ShowBadges" 
+                Striped="@Striped" 
+                Properties="Properties" />
+          </Item_2026WRKJRNL01> *@
+
+</MudAutocomplete>
+</MudStack>
+
+<style>
+    .sdpbc-autocomplete {
+        background-color: var(--mud-palette-surface);
+    }
+</style>
+
+@code {
+    //reference to a method that will send the data from the search result back to the parent
+    [Parameter]
+    public EventCallback<object> OnResultSelected { get; set; }
+
+    //external search method coming from a service or a repo
+    [Parameter]
+    public Func<string, Task<List<TItem>>>? AsyncSearchMethod { get; set; } = null;
+
+    [Parameter]
+    public List<string> Properties { get; set; } = new();
+
+    [Parameter]
+    public bool FullWidth { get; set; } = true;
+
+    [Parameter]
+    public Variant Variant { get; set; } = Variant.Outlined;
+
+    [Parameter]
+    public string Label { get; set; } = "Search";
+
+    [Parameter]
+    public string Icon { get; set; } = @Icons.Material.Filled.Search;
+
+    [Parameter]
+    public Color Color { get; set; } = Color.Primary;
+
+    [Parameter]
+    public bool ShowBadges { get; set; } = false;
+
+    [Parameter]
+    public bool ShowProgress { get; set; } = true;
+
+    [Parameter]
+    public Color ProgressColor { get; set; } = Color.Primary;
+
+    [Parameter]
+    public bool Striped { get; set; } = false;
+
+    private bool IsSearching;
+
+    //the internal selected object from the search
+    private dynamic? SelectedObject { get; set; } = null;
+
+    //keydown event to clear the search box text
+    private void ClearTxt(KeyboardEventArgs args)
+    {
+        if (args.Key == "Backspace")
+        {
+            SelectedObject = null;
+        }
+    }
+
+    //the internal function to display the item selected in the search text box
+    private string ToStringFunction(dynamic item)
+    {
+        return item == null ? string.Empty : $"{item.GetType().GetProperty("LastName")?.GetValue(item, null)}, {item.GetType().GetProperty("FirstName")?.GetValue(item, null)} ({item.GetType().GetProperty("EmplId")?.GetValue(item, null)})";
+    }
+
+    // Replace both instances of `return null;` with `return Enumerable.Empty<TItem>();`
+    // This ensures a non-null IEnumerable<TItem> is always returned, resolving CS8603.
+
+    private async Task<IEnumerable<TItem>> SearchFunction(string searchString, CancellationToken token)
+    {  
+        if (!string.IsNullOrWhiteSpace(searchString))
+        {
+            List<TItem> results = new List<TItem>();
+
+            Task<List<TItem>>? searchTask;
+
+            if (AsyncSearchMethod != null)
+            {
+                //call external search method passing the searchString to it
+                searchTask = AsyncSearchMethod(searchString);
+            } 
+            else
+            {
+                //no method assigned to event, use a default sample one
+                searchTask = Task.FromResult(new List<TItem>());
+            }
+
+            if (searchTask != null)
+            {
+                results = await searchTask.WaitAsync(token);
+            }
+
+            IsSearching = false;
+
+            return results.AsEnumerable<TItem>();
+        }
+
+        return Enumerable.Empty<TItem>();
+    }
+
+    //the method that will fire off and return the selected item to the parent
+    private async Task HandleResultSelected(TItem obj)
+    {
+        SelectedObject = obj;
+
+        await OnResultSelected.InvokeAsync(obj);
+    }
+}
+

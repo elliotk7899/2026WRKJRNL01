@@ -1,0 +1,17 @@
+﻿<MudContainer class="mt-8">
+    <MudText Typo="Typo.h5" class="mb-2">@(IsDarkMode ? "Dark Mode" : "Light Mode"):</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary">Primary</MudButton>
+    <MudButton Variant="Variant.Filled" Color="Color.Secondary">Secondary</MudButton>
+    <MudButton Variant="Variant.Filled" Color="Color.Tertiary">Tertiary</MudButton>
+
+    <MudButton Variant="Variant.Filled" Color="Color.Info">Info</MudButton>
+    <MudButton Variant="Variant.Filled" Color="Color.Success">Success</MudButton>
+    <MudButton Variant="Variant.Filled" Color="Color.Warning">Warning</MudButton>
+    <MudButton Variant="Variant.Filled" Color="Color.Error">Error</MudButton>
+</MudContainer>
+
+@code
+{
+    [Parameter]
+    public bool IsDarkMode { get; set; }
+}

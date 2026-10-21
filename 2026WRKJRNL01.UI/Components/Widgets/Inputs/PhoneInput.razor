@@ -1,0 +1,48 @@
+﻿<MudTextField 
+    Mask="@Mask" 
+    Label="@Label"
+    @bind-Value="PhoneNumber"
+    Clearable
+    Immediate
+    Placeholder="@Placeholder"
+    TextChanged="OnTextChanged"
+    Variant="@Variant"
+    Validation="ValidatePhoneNumber"
+    />
+
+@code {
+    private string PhoneNumber { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired] public EventCallback<string> TextChanged { get; set; }
+
+    [Parameter] public string Label { get; set; } = "Phone";
+
+    [Parameter] public string Placeholder { get; set; } = "555-555-5555";
+
+    [Parameter] public Variant Variant { get; set; } = Variant.Outlined;
+
+    private PatternMask Mask = new PatternMask("000-000-0000");
+
+    private string? ValidatePhoneNumber(string phone)
+    {
+        if (string.IsNullOrWhiteSpace(phone))
+            return "Phone number is required.";
+
+        // Example: US phone number format (XXX) XXX-XXXX or XXX-XXX-XXXX
+        var regex = new System.Text.RegularExpressions.Regex(@"^(\(\d{3}\)\s?|\d{3}-)\d{3}-\d{4}$");
+
+        if (!regex.IsMatch(phone))
+            return "Invalid phone number format. Use 123-456-7890.";
+
+        return null; // Valid
+    }
+
+    private async Task OnTextChanged(string value)
+    {
+        //TODO valdation
+
+        PhoneNumber = value;
+
+        await TextChanged.InvokeAsync(value);
+    }
+}

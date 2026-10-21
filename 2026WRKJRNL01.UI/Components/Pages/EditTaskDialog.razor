@@ -1,0 +1,337 @@
+﻿@using Classes
+@using WRKJRNL01.Data
+@using WRKJRNL01.Data.Models
+@using WRKJRNL01.Data.Services
+@using WRKJRNL01.Data.Repository
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudStack Row AlignItems="AlignItems.Center">
+            <MudIcon Icon="fa-solid fa-clipboard" />
+            <MudText Typo="Typo.h6">Edit Task</MudText>
+        </MudStack>
+    </TitleContent>
+
+    <DialogContent>
+        <MudForm @ref="TaskForm" @bind-IsValid="@ValidTask">
+            
+            <MudDatePicker Label="Date" 
+                @bind-Date="SelectedDay"
+                Variant="Variant.Outlined"
+                Required="true"
+                RequiredError="Date is required!" />
+            
+            <MudTextField @bind-Value="TaskName" @ref="NameField" MaxLength="128" Label="Name" Variant="Variant.Outlined" Required="true" RequiredError="Name is required!" />
+            
+            <MudSelect @ref="CatSelect"
+                @bind-Value="TaskCategoryChosen" 
+                @bind-Value:after="CheckAdd"
+                ToStringFunc="@GetCategoryName" 
+                Variant="Variant.Outlined" 
+                Label="Category" 
+                Required="true" 
+                RequiredError="Category is required!" 
+                OnBlur="() => TaskForm.ValidateAsync()">
+
+                @foreach (var Cat in Categories)
+                {
+                    <MudSelectItem Value="Cat">@Cat.Name</MudSelectItem>
+                }
+
+                <MudSelectItem Value="Adder">Add Category</MudSelectItem>
+
+            </MudSelect>
+
+            <MudSelect T="WorkLocation?"
+                       @bind-Value="SelectedWorkLocation"
+                       Label="Work Location"
+                       Placeholder="Select"
+                       Variant="Variant.Outlined"
+                       Required="true"
+                       RequiredError="Work location is required!">
+
+                <MudSelectItem T="WorkLocation?"
+                               Value="@((WorkLocation?)WorkLocation.Office)">
+                    Office
+                </MudSelectItem>
+
+                <MudSelectItem T="WorkLocation?"
+                               Value="@((WorkLocation?)WorkLocation.Remote)">
+                    Remote
+                </MudSelectItem>
+            </MudSelect>
+
+            <MudTextField @bind-Value="TaskDescription" Label="Comments (Optional)" Variant="Variant.Outlined"></MudTextField>
+            <MudText Style="color: gray; font-size: 10px; text-align: center;">Choose to complete the duration section or the time range section</MudText>
+            <MudToggleGroup T="bool" @bind-Value="TimeSelect" Outlined="true" @bind-Value:after="UpdateOnTimeSelect">
+                <MudToggleItem Value="false">Duration</MudToggleItem>
+                <MudToggleItem Value="true">Time Range</MudToggleItem>
+            </MudToggleGroup>
+
+            @if (!TimeSelect)
+            {
+                <MudStack Row="true">
+                    <MudNumericField @bind-Value="TimeInHours" Label="Hours" Variant="Variant.Outlined" Min="0.0" @bind-Value:after="UpdateOnTimeSelect" />
+                    <MudNumericField @bind-Value="TimeInMinutes" Label="Minutes" Variant="Variant.Outlined" Min="0.0" @bind-Value:after="UpdateOnTimeSelect" />
+                </MudStack>
+
+            }
+            else if (TimeSelect)
+            {
+                <MudStack Row="true">
+                    <div @onfocusout="CheckForValidTime">
+                        <MudTimePicker @ref="StartPicker" Label="Start Time" Variant="Variant.Outlined" AmPm="true" @bind-Time="StartTime" @bind-Time:after="CheckForValidTime" />
+                    </div>
+                    <div @onfocusout="CheckForValidTime">
+                        <MudTimePicker @ref="EndPicker" Label="End Time" Variant="Variant.Outlined" AmPm="true" @bind-Time="EndTime" @bind-Time:after="CheckForValidTime" />
+                    </div>
+                </MudStack>
+            }
+
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Filled" Color="Color.Dark">Cancel</MudButton>
+        <MudButton StartIcon="fa-solid fa-trash" OnClick="Delete" Color="Color.Error" Variant="Variant.Filled">Delete</MudButton>
+        <MudButton StartIcon="fa-solid fa-floppy-disk" OnClick="Edit" Disabled="@(!ValidTask || !ValidTime)" Variant="Variant.Filled" Color="Color.Primary">Save</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private MudForm TaskForm;
+    private MudTimePicker StartPicker;
+    private MudTimePicker EndPicker;
+    private bool ValidTask;
+    private MudSelect<Category> CatSelect;
+
+    private string TaskName { get; set; }
+    private Category TaskCategoryChosen { get; set; }
+    private WorkLocation? SelectedWorkLocation { get; set; }
+    private string TaskDescription { get; set; }
+    private bool TimeSelect { get; set; }
+    private double TimeInHours { get; set; }
+    private double TimeInMinutes { get; set; }
+    private TimeSpan? StartTime { get; set; }
+    private TimeSpan? EndTime { get; set; }
+
+    private bool ValidTime = false;
+    private Category Adder = new Category() { Name = "Add Category", Special = true };
+
+    [Inject] protected TaskRepo TaskRepo { get; set; } = default!;
+    [Inject] protected TaskService TaskService { get; set; } = default!;
+
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public DateTime? SelectedDay { get; set; }
+
+    [Parameter] public Tasque SelectedTask { get; set; }
+
+    [Parameter][EditorRequired] public Journal Journal { get; set; }
+
+    [Parameter][EditorRequired] public List<Category> Categories { get; set; } = new List<Category>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (SelectedTask == null)
+        {
+            // Close the dialog or show an error message
+            MudDialog.Cancel();
+            return;
+        }
+
+        SelectedDay = SelectedTask.Date;
+        TaskName = SelectedTask.Name;
+        TaskCategoryChosen = SelectedTask.TaskCategory;
+        TaskDescription = SelectedTask.Description;
+        SelectedWorkLocation = SelectedTask.WorkLocation;
+
+        if (SelectedTask.TimeSelection)
+        {
+            TimeSelect = true;
+            StartTime = SelectedTask.StartTime?.ToTimeSpan();
+            EndTime = SelectedTask.EndTime?.ToTimeSpan();
+        }
+        else
+        {
+            TimeSelect = false;
+            TimeInHours = (double)SelectedTask.GivenHours.GetValueOrDefault(0);
+            TimeInMinutes = (double)SelectedTask.GivenMinutes.GetValueOrDefault(0);
+        }
+
+        ValidTime = true;
+
+        while (TaskForm is null)
+        {
+            await Task.Delay(100);
+        }
+
+        await TaskForm.ValidateAsync();
+    }
+
+    private void UpdateOnTimeSelect()
+    {
+        ValidTime = false;
+
+        if (!TimeSelect)
+        {
+            if (TimeInHours > 0 || TimeInMinutes > 0)
+            {
+                ValidTime = true;
+            }
+        }
+        else
+        {
+            if (StartTime is not null && EndTime is not null)
+            {
+                ValidTime = true;
+            }
+        }
+    }
+
+    public void CheckForValidTime()
+    {
+        if (!((EndTime.GetValueOrDefault() - StartTime.GetValueOrDefault()).TotalHours > 0))
+        {
+            EndTime = null;
+            EndPicker.ResetAsync();
+            StateHasChanged();
+            UpdateOnTimeSelect();
+        }
+        else
+        {
+            UpdateOnTimeSelect();
+        }
+    }
+
+    private async Task CheckAdd()
+    {
+        if (TaskCategoryChosen != null && TaskCategoryChosen.Special)
+        {
+            if (TaskCategoryChosen.Name == "Add Category")
+            {
+                TaskCategoryChosen = null;
+                await CatSelect.ResetAsync();
+
+                StateHasChanged();
+
+                await OpenCategoryDialogAsync();
+            }
+            else if (TaskCategoryChosen.Name == "Manage Categories")
+            {
+                TaskCategoryChosen = null;
+                await CatSelect.ResetAsync();
+
+                StateHasChanged();
+
+                // var parameters = new DialogParameters<ManageCategoryDialog> {
+                //     { x => x.JournalDialog, Journal}
+                // };
+
+                var CatDialog = await DialogService.ShowAsync<ManageCategoryDialog>("Manage Categories");
+                var CatResults = await CatDialog.Result;
+
+                StateHasChanged();
+            }
+        }
+    }
+
+    private async Task OpenCategoryDialogAsync()
+    {
+        // var parameters = new DialogParameters<CategoryDialog> {
+        //     { x => x.Journal, Journal}
+        // };
+
+        var CatDialog = await DialogService.ShowAsync<CategoryDialog>("Category Dialog");
+        var CatResults = await CatDialog.Result;
+
+        if (!CatResults.Canceled)
+        {
+            Category NewCategory = await CatDialog.GetReturnValueAsync<Category>();
+
+            TaskCategoryChosen = NewCategory;
+            StateHasChanged();
+        }
+        else
+        {
+            TaskCategoryChosen = null;
+            await CatSelect.ResetAsync();
+
+            StateHasChanged();
+        }
+    }
+
+    private readonly Func<Category, string> GetCategoryName = p => p?.Name;
+
+    #region AutoFocus field
+    private MudTextField<string>? NameField;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && NameField is not null)
+        {
+            await Task.Delay(10);
+
+            await NameField.FocusAsync();
+        }
+    }
+    #endregion
+
+    private void Delete()
+    {
+        if (SelectedTask == null)
+        {
+            throw new Exception("No task or task date!");
+        }
+
+        //find the task in the journals (memory)
+        Journal.FindJournalDay(SelectedTask)?.Tasks.Remove(SelectedTask);
+
+        TaskRepo.Remove(SelectedTask, false);
+
+        Snackbar.Configuration.PositionClass = Defaults.Classes.Position.BottomLeft;
+        Snackbar.Add(SelectedTask.Name + " task removed!", Severity.Error);
+
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+
+    private async Task Edit() {
+        if (SelectedDay > DateTime.Today)
+        {
+            Snackbar.Add("Error: Date is in the future!", Severity.Error);
+            return;
+        }
+
+        SelectedTask.Name = TaskName;
+        SelectedTask.Date = SelectedDay.GetValueOrDefault();
+        SelectedTask.TaskCategory = TaskCategoryChosen;
+        SelectedTask.CatId = TaskCategoryChosen.PkId;
+        SelectedTask.Description = TaskDescription;
+        SelectedTask.WorkLocation = SelectedWorkLocation;
+
+        if (TimeSelect)
+        {
+            SelectedTask.TimeSelection = true;
+            SelectedTask.Hours = (decimal)(EndTime.GetValueOrDefault() - StartTime.GetValueOrDefault()).TotalHours;
+            SelectedTask.StartTime = StartTime.HasValue ? TimeOnly.FromTimeSpan(StartTime.Value) : null;
+            SelectedTask.EndTime = EndTime.HasValue ? TimeOnly.FromTimeSpan(EndTime.Value) : null;
+        }
+        else
+        {
+            SelectedTask.TimeSelection = false;
+            SelectedTask.Hours = (decimal)(TimeInHours + (TimeInMinutes / 60));
+            SelectedTask.GivenHours = (decimal)TimeInHours;
+            SelectedTask.GivenMinutes = (decimal)TimeInMinutes;
+        }
+
+        await TaskService.CreateTask(SelectedTask);
+
+        Snackbar.Configuration.PositionClass = Defaults.Classes.Position.BottomLeft;
+        Snackbar.Add(SelectedTask.Name + " task edited!", Severity.Warning);
+
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

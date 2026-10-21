@@ -1,0 +1,72 @@
+﻿@inherits AppComponentBase
+
+<MudIconButton 
+    Icon="fa-solid fa-palette" 
+    Color="Color.Inherit"
+    OnClick="@ToggleOpen" 
+    title="Theme Manager" />
+
+<MudPopover Open="@Visible"
+            Fixed="true"
+            Class="pa-4"
+            AnchorOrigin="Origin.TopRight"
+            TransformOrigin="Origin.BottomRight">
+
+    <MudText Typo="Typo.subtitle2"><b>Select a Theme:</b></MudText>
+
+            <MudStack Spacing="0" Row>
+               <MudSelect 
+                   @bind-Value="SelectedTheme"
+                   T="string"
+                   FitContent
+                   Margin="Margin.Dense"
+                   Variant="Variant.Outlined"
+                   Placeholder="Select Theme">
+                    @foreach (var theme in AppState.Themes)
+                    {
+                <MudSelectItem Value="theme.Key">@theme.Key.ToPascalCase()</MudSelectItem>
+                    }
+               </MudSelect>
+
+                <MudButton 
+                    OnClick="SaveTheme"
+                    Class="mt-1"
+                   Style="height: 2rem; border-bottom-left-radius: 0; border-top-left-radius: 0; height: 2.5rem;"
+                    Color="Color.Primary"
+                    IconSize="Size.Small"
+                    Variant="Variant.Filled">
+                    <MudIcon Icon="fa-solid fa-floppy-disk" />
+                </MudButton>
+            </MudStack>
+
+</MudPopover>
+
+<style>
+     .mud-input-outlined-border {
+        border-bottom-right-radius: 0 !important;
+        border-top-right-radius: 0 !important;
+    }
+</style>
+
+@code {
+    private string SelectedTheme = string.Empty;
+
+    private bool Visible;
+
+    private void ToggleOpen() => Visible = !Visible;
+
+    private void SaveTheme()
+    {
+        AppState.SelectedTheme = SelectedTheme;
+
+        Visible = false;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender && string.IsNullOrEmpty(SelectedTheme))
+        {
+            SelectedTheme = string.IsNullOrEmpty(AppState.SelectedTheme) ? "Default" : AppState.SelectedTheme;
+        }
+    }
+}

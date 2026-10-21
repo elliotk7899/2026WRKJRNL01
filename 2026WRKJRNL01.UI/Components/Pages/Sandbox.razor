@@ -1,0 +1,20 @@
+﻿@page "/sandbox"
+@inherits AppComponentBase
+
+@using SDPBC.Employees.ServiceConnector
+@using WRKJRNL01.Data.Services
+@using _2026WRKJRNL01.UI.Components.Layout
+
+<PageTitle>@Title</PageTitle>
+
+Welcome to the sandbox.  This file won't be uploaded to GitHub, so you can test things out in debug.
+
+@code {
+    private string Title { get; set; } = "";
+
+    protected override void OnInitialized()
+    {
+        AppState.OnChange += StateHasChanged;
+        AppState.PageTitle = Title;
+    }
+}

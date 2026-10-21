@@ -1,0 +1,32 @@
+﻿<MudIconButton Icon="fa-solid fa-circle-user" Color="Color.Inherit" OnClick="@ToggleOpen" />
+
+<MudPopover 
+    Open="@Open" 
+    Fixed="true"
+    Class="pa-2"
+    AnchorOrigin="Origin.TopRight"
+    TransformOrigin="Origin.BottomRight">
+
+        <MudText Style="font-weight: bold" Color="Color.Primary">
+            <i class="fa-regular fa-user-group pr-2 pb-2"></i> Roles
+        </MudText>
+
+        <MudDivider />
+
+        <SDPBC.Authentication.BlazorUI.Mud.Components.CurrentUserComponent ShowGlobalIDTypeBadge="false"/>
+
+        <MudDivider />
+
+        @* OFFLINE: SAML sign-out removed. Local build has a single configured user. *@
+        <MudButton Href="./LoggedOut" FullWidth="true" Class="mt-2" Variant="Variant.Filled" Color="Color.Secondary">
+            <i class="fa-solid fa-arrow-right-from-bracket pr-2"></i>
+            Sign Out
+        </MudButton>
+
+</MudPopover>
+
+@code {
+    private bool Open;
+
+    private void ToggleOpen() => Open = !Open;
+}

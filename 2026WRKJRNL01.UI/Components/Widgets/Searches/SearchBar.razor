@@ -1,0 +1,97 @@
+﻿<MudStack AlignItems="AlignItems.Baseline" Style="position: relative;">
+        <MudTextField Variant="@Variant"
+                      Class="sdpbc-search-bar"
+                      Clearable
+                      Adornment="Adornment.End"
+                      AdornmentIcon="@Icon"
+                      AdornmentColor="@Color"
+                      FullWidth="@FullWidth"
+                      Disabled="@IsSearching"
+                      T="string"
+                      Immediate
+                      Label="@Label"
+                      Value="@SearchText"
+                      OnKeyDown="HandleKeyDown"
+                      ValueChanged="HandleResultSelected" />
+        <MudProgressLinear Color="Color.Primary" Rounded="true" Indeterminate="true" Style="@SearchStyle" />
+</MudStack>
+
+<style>
+    .sdpbc-search-bar {
+        background-color: var(--mud-palette-surface);
+    }
+</style>
+
+@code {
+    //reference to a method that will send the data from the search result back to the parent
+    [Parameter]
+    public EventCallback<object> OnResultSelected { get; set; }
+
+    [Parameter]
+    public EventCallback<string> SearchMethod { get; set; }
+
+    [Parameter]
+    public string SearchText { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool FullWidth { get; set; } = true;
+
+    [Parameter]
+    public Variant Variant { get; set; } = Variant.Outlined;
+
+    [Parameter]
+    public string Label { get; set; } = "Search";
+
+    [Parameter]
+    public string Icon { get; set; } = @Icons.Material.Filled.Search;
+
+    [Parameter]
+    public Color Color { get; set; } = Color.Primary;
+
+    [Parameter]
+    public bool ShowProgress { get; set; } = true;
+
+    [Parameter]
+    public bool Striped { get; set; } = false;
+
+    private bool IsSearching = false;
+
+    private string SearchStyle => (ShowProgress && IsSearching) ? 
+    "display: block; position: absolute; bottom: 0.25rem;"
+    : "display: none;";
+
+    //keydown event to clear the search box text
+    private async Task HandleKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter")
+        {
+            await Search();
+        }
+    }
+
+    private async Task<bool> Search()
+    {
+        if (IsSearching || string.IsNullOrEmpty(SearchText.Trim()))
+            return false;
+
+        IsSearching = true;
+
+        //process the search
+        await Task.Delay(3000);
+
+        await SearchMethod.InvokeAsync(SearchText);
+
+        IsSearching = false;
+
+        return true;
+    }
+
+    //the method that will fire off and return the selected item to the parent
+    private async Task HandleResultSelected(string txt)
+    {
+        SearchText = txt;
+
+        await OnResultSelected.InvokeAsync(txt);
+    }
+}
+

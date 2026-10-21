@@ -1,0 +1,59 @@
+﻿@page "/samples/page"
+
+@using Microsoft.AspNetCore.Components.Authorization
+@using _2026WRKJRNL01.UI.Components.Layout
+@inherits AppComponentBase
+
+<PageTitle>@Title</PageTitle>
+
+<h3>Header</h3>
+
+<!--If you dont need authorization on the page-->
+<MudText Class="mb-4">
+    Welcome to the _2026WRKJRNL01 (no auth)
+</MudText>
+<!----------------------------------------->
+
+
+<!--If you need authorization on the page-->
+<AuthorizeView>
+
+    <NotAuthorized>
+		<label class="alert alert-danger">You are not authorized to view this page.</label>
+    </NotAuthorized>
+
+    <Authorized>
+
+        <MudText Class="mb-4">
+            Welcome to the _2026WRKJRNL01 (with auth)
+        </MudText>
+
+    </Authorized>
+</AuthorizeView>
+<!----------------------------------------->
+
+@code {
+    private string Title { get; set; } = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Important! The UserData object is assembled in the base class, so the below line should always be called first.
+        await base.OnInitializedAsync();
+
+        AppState.OnChange += StateHasChanged;
+        AppState.PageTitle = Title;
+
+        // Example code to get the current user's info.
+        // Checks if our user is authenticated /and/ that they're a valid user of the app.
+        if (base.UserData.IsAppUser)
+        {
+            // The user's login ID (for employees this is either a username or the employee id). In future this will hold other IDs such as students and contractors.
+            // To get the user's ID specific to their person type make a call out to the data service for that time.
+            // Ex: await EmployeeService.GetEmployeeBysAMAccountName(globalID);
+            string globalID = base.UserData.GlobalID;
+            string firstName = base.UserData.FirstName;
+
+            // Other goodies can also be found under the base.UserData object such as the user's roles and permissions.
+        }
+    }
+}

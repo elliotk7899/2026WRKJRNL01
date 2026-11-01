@@ -1,20 +1,12 @@
-# Introduction 
-TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project. 
+# Overview
 
-# Getting Started
-TODO: Guide users through getting your code up and running on their own system. In this section you can talk about:
-1.	Installation process
-2.	Software dependencies
-3.	Latest releases
-4.	API references
+The Work Journal App is an app that solves the problem of time management. It allowed users to add tasks to their journal and assign them a category, so they could receive an activity break down of each category to see where they've spent their time. The project has some bugs because it is not connected to the School District of Palm Beach County enterprise.
 
-# Build and Test
-TODO: Describe and show how to build your code and run the tests. 
+# Build and Run from Source
+You'll need the .NET 10 SDK for your platform [here](https://dotnet.microsoft.com/en-us/)
 
-# Contribute
-TODO: Explain how other users and developers can contribute to make your code better. 
+Open the terminal in the root of the project and type this in:
 
-If you want to learn more about creating good readme files then refer the following [guidelines](https://docs.microsoft.com/en-us/azure/devops/repos/git/create-a-readme?view=azure-devops). You can also seek inspiration from the below readme files:
-- [ASP.NET Core](https://github.com/aspnet/Home)
-- [Visual Studio Code](https://github.com/Microsoft/vscode)
-- [Chakra Core](https://github.com/Microsoft/ChakraCore)
+`dotnet run --project PokemonCatch/PokemonCatch.csproj`
+
+You will see the address and port for the running application after it builds and starts to run. Open a browser and navigate to that address.
